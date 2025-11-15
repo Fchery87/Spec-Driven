@@ -144,6 +144,13 @@ export class AuthService {
         };
       }
 
+      if (!user.password_hash) {
+        return {
+          success: false,
+          message: 'Password login is not available for this account'
+        };
+      }
+
       // Verify password
       const passwordValid = await this.passwordService.verifyPassword(
         validated.password,
@@ -237,6 +244,13 @@ export class AuthService {
         return {
           success: false,
           message: 'User not found'
+        };
+      }
+
+      if (!user.password_hash) {
+        return {
+          success: false,
+          message: 'Password reset is not available for this account'
         };
       }
 

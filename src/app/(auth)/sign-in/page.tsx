@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { KeyRound, Loader2, ShieldCheck } from "lucide-react"
 
@@ -20,6 +21,9 @@ import { signIn } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
 
 export default function SignInPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
@@ -32,14 +36,51 @@ export default function SignInPage() {
       return
     }
     setError(null)
-    await signIn.email(
-      { email, password },
-      {
-        onRequest: () => setLoading(true),
-        onResponse: () => setLoading(false),
-        onError: (ctx) => setError(ctx.error.message || "Unable to sign in."),
+    setLoading(true)
+
+    try {
+      console.log("Starting sign in...")
+      const result = await signIn.email(
+        { email, password, callbackURL: callbackUrl },
+        {
+          onRequest: () => {
+            console.log("onRequest triggered")
+            setLoading(true)
+          },
+          onResponse: (ctx) => {
+            console.log("onResponse triggered:", ctx)
+            setLoading(false)
+          },
+          onError: (ctx) => {
+            console.log("onError triggered:", ctx)
+            setError(ctx.error.message || "Unable to sign in.")
+            setLoading(false)
+          },
+          onSuccess: (ctx) => {
+            console.log("onSuccess triggered:", ctx)
+            router.push(callbackUrl)
+          },
+        }
+      )
+
+      console.log("Sign in result:", result)
+
+      // Fallback: if onSuccess doesn't trigger, check result and redirect manually
+      if (result && !result.error) {
+        console.log("Manual redirect after successful sign in")
+        setTimeout(() => {
+          router.push(callbackUrl)
+        }, 100)
+      } else if (result?.error) {
+        console.error("Sign in result has error:", result.error)
+        setError(result.error.message || "Sign in failed")
+        setLoading(false)
       }
-    )
+    } catch (err) {
+      console.error("Sign in exception:", err)
+      setError("An unexpected error occurred.")
+      setLoading(false)
+    }
   }
 
   const handleSocialSignIn = async (provider: "google") => {
@@ -114,7 +155,16 @@ export default function SignInPage() {
                 Remember me on this device
               </Label>
             </div>
-            <Button className="w-full" disabled={loading} type="button" onClick={handleEmailSignIn}>
+            <Button
+              className="w-full"
+              disabled={loading}
+              type="button"
+              onClick={(e) => {
+                console.log("Button clicked!")
+                e.preventDefault()
+                handleEmailSignIn()
+              }}
+            >
               {loading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (

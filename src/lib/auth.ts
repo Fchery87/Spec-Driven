@@ -1,5 +1,3 @@
-"use server"
-
 import { betterAuth } from "better-auth"
 import { prismaAdapter } from "better-auth/adapters/prisma"
 
@@ -14,6 +12,7 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    autoSignIn: true,
     async sendResetPassword(data) {
       console.log("Password reset requested", data.email)
     },
@@ -26,5 +25,9 @@ export const auth = betterAuth({
           clientSecret: process.env.GOOGLE_CLIENT_SECRET,
         },
       }),
+  },
+  sessionMaxAge: 60 * 60 * 24 * 7, // 7 days
+  session: {
+    updateAge: 60 * 60 * 24, // Update every 24 hours
   },
 })

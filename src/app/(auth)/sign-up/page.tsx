@@ -52,13 +52,13 @@ export default function SignUpPage() {
       return
     }
     setError(null)
-    const imagePayload = image ? await convertImageToBase64(image) : ""
+    const imagePayload = image ? await convertImageToBase64(image) : undefined
     await signUp.email(
       {
         email,
         password,
         name: `${firstName} ${lastName}`.trim(),
-        image: imagePayload,
+        ...(imagePayload ? { image: imagePayload } : {}),
         callbackURL: "/dashboard",
       },
       {
