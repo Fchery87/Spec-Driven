@@ -74,46 +74,46 @@ export class ErrorBoundary extends React.Component<
       }
 
       return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full">
+        <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex items-center justify-center p-4">
+          <div className="bg-card rounded-lg shadow-xl max-w-md w-full text-card-foreground">
             {/* Error Icon */}
             <div className="flex justify-center pt-6">
-              <div className="bg-red-100 dark:bg-red-900 p-3 rounded-full">
-                <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+              <div className="bg-destructive/10 p-3 rounded-full">
+                <AlertCircle className="w-6 h-6 text-destructive" />
               </div>
             </div>
 
             {/* Error Content */}
             <div className="p-6 text-center">
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+              <h1 className="text-2xl font-bold text-foreground mb-2">
                 Oops! Something went wrong
               </h1>
-              <p className="text-slate-600 dark:text-slate-300 mb-4">
+              <p className="text-muted-foreground mb-4">
                 We encountered an unexpected error. Please try again or contact support if the
                 problem persists.
               </p>
 
               {/* Error Details (Development Only) */}
               {process.env.NODE_ENV === 'development' && this.state.error && (
-                <details className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800 text-left mb-4">
-                  <summary className="cursor-pointer font-mono text-sm text-red-700 dark:text-red-400 font-semibold">
+                <details className="mt-4 p-4 bg-destructive/10 rounded border border-destructive/30 text-left mb-4">
+                  <summary className="cursor-pointer font-mono text-sm text-destructive font-semibold">
                     Error Details (Development Only)
                   </summary>
                   <div className="mt-2 space-y-2">
                     <div>
-                      <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      <p className="text-xs font-semibold text-muted-foreground">
                         Message:
                       </p>
-                      <p className="font-mono text-xs text-red-600 dark:text-red-400">
+                      <p className="font-mono text-xs text-destructive">
                         {this.state.error.message}
                       </p>
                     </div>
                     {this.state.errorInfo && (
                       <div>
-                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        <p className="text-xs font-semibold text-muted-foreground">
                           Component Stack:
                         </p>
-                        <pre className="font-mono text-xs bg-slate-100 dark:bg-slate-900 p-2 rounded overflow-auto max-h-32 text-slate-700 dark:text-slate-300">
+                        <pre className="font-mono text-xs bg-muted p-2 rounded overflow-auto max-h-32 text-muted-foreground">
                           {this.state.errorInfo.componentStack}
                         </pre>
                       </div>
@@ -126,14 +126,14 @@ export class ErrorBoundary extends React.Component<
               <div className="flex flex-col gap-2">
                 <button
                   onClick={this.handleReset}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-primary/80 text-primary-foreground rounded-lg font-medium transition-colors"
                 >
                   <RefreshCw className="w-4 h-4" />
                   Try Again
                 </button>
                 <button
                   onClick={() => window.location.href = '/'}
-                  className="w-full px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-900 dark:text-white rounded-lg font-medium transition-colors"
+                  className="w-full px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg font-medium transition-colors"
                 >
                   Go Home
                 </button>
@@ -141,7 +141,7 @@ export class ErrorBoundary extends React.Component<
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-3 bg-slate-50 dark:bg-slate-700/50 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400 rounded-b-lg">
+            <div className="px-6 py-3 bg-muted border-t border-border text-xs text-muted-foreground rounded-b-lg">
               <p>Error ID: <code className="font-mono">{Math.random().toString(36).substring(7)}</code></p>
             </div>
           </div>

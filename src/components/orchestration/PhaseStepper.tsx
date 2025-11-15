@@ -36,26 +36,26 @@ export function PhaseStepper({
   const getPhaseIcon = (status: Phase['status']) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+        return <CheckCircle2 className="h-5 w-5 text-[hsl(var(--chart-4))]" />
       case 'current':
-        return <Play className="h-5 w-5 text-blue-600" />
+        return <Play className="h-5 w-5 text-primary" />
       case 'blocked':
-        return <AlertCircle className="h-5 w-5 text-amber-600" />
+        return <AlertCircle className="h-5 w-5 text-destructive" />
       default:
-        return <Circle className="h-5 w-5 text-slate-400" />
+        return <Circle className="h-5 w-5 text-muted-foreground" />
     }
   }
 
   const getPhaseColor = (status: Phase['status']) => {
     switch (status) {
       case 'completed':
-        return 'border-emerald-200 bg-emerald-50'
+        return 'border border-[hsl(var(--chart-4))]/30 bg-[hsl(var(--chart-4))]/10'
       case 'current':
-        return 'border-blue-200 bg-blue-50'
+        return 'border border-primary/40 bg-primary/10'
       case 'blocked':
-        return 'border-amber-200 bg-amber-50'
+        return 'border border-destructive/30 bg-destructive/10'
       default:
-        return 'border-slate-200 bg-slate-50'
+        return 'border-border bg-muted'
     }
   }
 
@@ -85,9 +85,9 @@ export function PhaseStepper({
                     w-10 h-10 rounded-full border-2 flex items-center justify-center
                     ${isActive
                       ? isCompleted
-                        ? 'bg-emerald-600 border-emerald-600 text-white'
-                        : 'bg-blue-600 border-blue-600 text-white'
-                      : 'bg-slate-200 border-slate-300 text-slate-500'
+                        ? 'bg-[hsl(var(--chart-4))] border-[hsl(var(--chart-4))] text-background'
+                        : 'bg-primary border-primary text-primary-foreground'
+                      : 'bg-muted border-border text-muted-foreground'
                     }
                   `}
                 >
@@ -98,7 +98,7 @@ export function PhaseStepper({
                   <div
                     className={`
                       w-16 h-1 mx-2
-                      ${index < currentIndex ? 'bg-emerald-600' : 'bg-slate-300'}
+                      ${index < currentIndex ? 'bg-[hsl(var(--chart-4))]' : 'bg-muted'}
                     `}
                   />
                 )}
@@ -107,7 +107,7 @@ export function PhaseStepper({
           })}
         </div>
         
-        <div className="flex justify-between text-xs text-slate-600">
+        <div className="flex justify-between text-xs text-muted-foreground">
           {phases.map((phase) => (
             <div key={phase.name} className="text-center max-w-20">
               <div className="font-medium truncate">{phase.name}</div>
@@ -141,24 +141,24 @@ export function PhaseStepper({
             <CardContent className="pt-0">
               {/* Status */}
               <div className="flex items-center gap-2 mb-3">
-                <div className="text-sm font-medium capitalize text-slate-700">
+                <div className="text-sm font-medium capitalize text-muted-foreground">
                   {phase.status === 'blocked' ? 'Blocked' : phase.status}
                 </div>
               </div>
 
               {/* Artifacts Progress */}
               {phase.artifacts && phase.artifacts.required.length > 0 && (
-                <div className="mb-3 p-2 bg-slate-100 rounded">
+                <div className="mb-3 p-2 bg-muted rounded">
                   <div className="flex items-center gap-2 mb-1">
-                    <FileCheck className="h-4 w-4 text-slate-600" />
-                    <span className="text-xs font-medium text-slate-700">
+                    <FileCheck className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-xs font-medium text-muted-foreground">
                       Artifacts: {phase.artifacts.generated.length}/{phase.artifacts.required.length}
                     </span>
                   </div>
-                  <div className="w-full bg-slate-300 rounded-full h-2 mt-1">
+                  <div className="w-full bg-muted rounded-full h-2 mt-1">
                     <div
                       className={`h-2 rounded-full transition-all ${
-                        phase.artifacts.complete ? 'bg-emerald-500' : 'bg-blue-500'
+                        phase.artifacts.complete ? 'bg-[hsl(var(--chart-4))]' : 'bg-primary'
                       }`}
                       style={{
                         width: `${(phase.artifacts.generated.length / phase.artifacts.required.length) * 100}%`
@@ -170,18 +170,18 @@ export function PhaseStepper({
 
               {/* Blocked Reason */}
               {phase.blockedReason && (
-                <div className="mb-3 p-2 bg-amber-50 border border-amber-200 rounded flex items-start gap-2">
-                  <Lock className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-xs text-amber-800">
+                <div className="mb-3 p-2 bg-destructive/10 border border-destructive/20 rounded flex items-start gap-2">
+                  <Lock className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
+                  <div className="text-xs text-destructive">
                     <div className="font-semibold">{phase.gateName}</div>
-                    <div className="text-amber-700">{phase.blockedReason}</div>
+                    <div className="text-destructive">{phase.blockedReason}</div>
                   </div>
                 </div>
               )}
 
               {/* Duration */}
               {phase.duration && (
-                <div className="flex items-center gap-2 text-xs text-slate-500">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Clock className="h-3 w-3" />
                   {phase.duration} minutes
                 </div>
@@ -224,7 +224,7 @@ export function PhaseStepper({
         <Card className="border-0 shadow-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Play className="h-5 w-5 text-blue-600 fill-blue-100" />
+              <Play className="h-5 w-5 text-primary" />
               Current Phase: {currentPhase}
             </CardTitle>
           </CardHeader>

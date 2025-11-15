@@ -17,13 +17,13 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+    <main className="min-h-screen bg-gradient-to-br from-background via-background to-muted p-8">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-slate-900 mb-4">
+          <h1 className="text-4xl font-bold text-foreground mb-4">
             Spec-Driven Platform
           </h1>
-          <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Transform your ideas into production-ready projects through structured specification generation
           </p>
         </div>
@@ -32,7 +32,7 @@ export default function Home() {
           <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-center gap-3 mb-2">
-                <Lightbulb className="h-6 w-6 text-amber-500" />
+                <Lightbulb className="h-6 w-6 text-primary" />
                 <CardTitle className="text-xl">Analysis</CardTitle>
               </div>
               <CardDescription>
@@ -40,7 +40,7 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-muted-foreground">
                 Generate constitution, project brief, and user personas
               </p>
             </CardContent>
@@ -49,7 +49,7 @@ export default function Home() {
           <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-center gap-3 mb-2">
-                <Layers className="h-6 w-6 text-blue-500" />
+                <Layers className="h-6 w-6 text-[hsl(var(--chart-2))]" />
                 <CardTitle className="text-xl">Architecture</CardTitle>
               </div>
               <CardDescription>
@@ -57,7 +57,7 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-muted-foreground">
                 Get detailed specs, data models, and API contracts
               </p>
             </CardContent>
@@ -66,7 +66,7 @@ export default function Home() {
           <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-center gap-3 mb-2">
-                <Package className="h-6 w-6 text-emerald-500" />
+                <Package className="h-6 w-6 text-[hsl(var(--chart-3))]" />
                 <CardTitle className="text-xl">Handoff</CardTitle>
               </div>
               <CardDescription>
@@ -74,7 +74,7 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-muted-foreground">
                 Ready-to-use prompts for your LLM of choice
               </p>
             </CardContent>

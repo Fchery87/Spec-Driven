@@ -69,18 +69,18 @@ export function ArtifactViewer({
             <div>
               <DialogTitle className="text-lg font-bold">{filename}</DialogTitle>
               <DialogDescription className="mt-1">
-                Phase: <span className="font-semibold text-slate-700">{phase}</span> ·
-                Size: <span className="font-semibold text-slate-700">{(content.length / 1024).toFixed(2)} KB</span>
+                Phase: <span className="font-semibold text-muted-foreground">{phase}</span> ·
+                Size: <span className="font-semibold text-muted-foreground">{(content.length / 1024).toFixed(2)} KB</span>
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
         {/* Content Display Area */}
-        <div className="flex-1 overflow-hidden flex flex-col border rounded-lg bg-slate-50">
+        <div className="flex-1 overflow-hidden flex flex-col border border-border rounded-lg bg-muted">
           {/* Content */}
           <div className="flex-1 overflow-auto p-4">
-            <pre className="text-xs leading-relaxed whitespace-pre-wrap break-words font-mono text-slate-800">
+            <pre className="text-xs leading-relaxed whitespace-pre-wrap break-words font-mono text-foreground">
               {isMarkdown ? (
                 // For markdown, render with some basic formatting
                 formattedContent

@@ -105,24 +105,24 @@ export default function Dashboard() {
 
   const getPhaseColor = (phase: string) => {
     const colors: Record<string, string> = {
-      ANALYSIS: 'bg-blue-100 text-blue-800',
-      STACK_SELECTION: 'bg-purple-100 text-purple-800',
-      SPEC: 'bg-indigo-100 text-indigo-800',
-      DEPENDENCIES: 'bg-cyan-100 text-cyan-800',
-      SOLUTIONING: 'bg-teal-100 text-teal-800',
-      DONE: 'bg-green-100 text-green-800'
+      ANALYSIS: 'bg-[hsl(var(--chart-1))]/20 text-[hsl(var(--chart-1))]',
+      STACK_SELECTION: 'bg-[hsl(var(--chart-2))]/20 text-[hsl(var(--chart-2))]',
+      SPEC: 'bg-[hsl(var(--chart-3))]/20 text-[hsl(var(--chart-3))]',
+      DEPENDENCIES: 'bg-[hsl(var(--chart-4))]/20 text-[hsl(var(--chart-4))]',
+      SOLUTIONING: 'bg-[hsl(var(--chart-5))]/20 text-[hsl(var(--chart-5))]',
+      DONE: 'bg-primary text-primary-foreground'
     };
-    return colors[phase] || 'bg-slate-100 text-slate-800';
+    return `${colors[phase] || 'bg-muted text-foreground'} border-transparent`;
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+    <main className="min-h-screen bg-gradient-to-br from-background via-background to-muted p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-start mb-12">
           <div>
-            <h1 className="text-4xl font-bold text-slate-900 mb-2">Projects</h1>
-            <p className="text-lg text-slate-600">
+            <h1 className="text-4xl font-bold text-foreground mb-2">Projects</h1>
+            <p className="text-lg text-muted-foreground">
               Manage your spec-driven projects
             </p>
           </div>
@@ -133,9 +133,9 @@ export default function Dashboard() {
 
         {/* Error message */}
         {error && (
-          <Card className="mb-8 border-red-200 bg-red-50">
+          <Card className="mb-8 border border-destructive/30 bg-destructive/10">
             <CardContent className="pt-6">
-              <p className="text-red-700">{error}</p>
+              <p className="text-destructive">{error}</p>
             </CardContent>
           </Card>
         )}
@@ -143,7 +143,7 @@ export default function Dashboard() {
         {/* Loading state */}
         {loading && (
           <div className="text-center py-12">
-            <p className="text-slate-600">Loading projects...</p>
+            <p className="text-muted-foreground">Loading projects...</p>
           </div>
         )}
 
@@ -151,7 +151,7 @@ export default function Dashboard() {
         {!loading && projects.length === 0 && !error && (
           <Card>
             <CardContent className="pt-12 text-center">
-              <p className="text-slate-600 mb-6">
+              <p className="text-muted-foreground mb-6">
                 No projects yet. Create one to get started!
               </p>
               <Button onClick={handleNewProject}>Create First Project</Button>
@@ -181,7 +181,7 @@ export default function Dashboard() {
                     variant="ghost"
                     size="sm"
                     onClick={(e) => handleDeleteClick(e, project)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="text-destructive hover:text-destructive/80 hover:bg-destructive/10"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -191,8 +191,8 @@ export default function Dashboard() {
                     {/* Stack info */}
                     {project.stack_choice && (
                       <div className="text-sm">
-                        <p className="text-slate-600">Stack:</p>
-                        <p className="text-slate-900 font-medium">
+                        <p className="text-muted-foreground">Stack:</p>
+                        <p className="text-foreground font-medium">
                           {project.stack_choice.replace(/_/g, ' ')}
                         </p>
                       </div>
@@ -201,24 +201,24 @@ export default function Dashboard() {
                     {/* Approvals */}
                     <div className="text-sm space-y-2">
                       <div className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${project.stack_approved ? 'bg-green-500' : 'bg-slate-300'}`}></span>
-                        <span className="text-slate-600">Stack Approved</span>
+                        <span className={`w-2 h-2 rounded-full ${project.stack_approved ? 'bg-[hsl(var(--chart-4))]' : 'bg-muted'}`}></span>
+                        <span className="text-muted-foreground">Stack Approved</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${project.dependencies_approved ? 'bg-green-500' : 'bg-slate-300'}`}></span>
-                        <span className="text-slate-600">Dependencies Approved</span>
+                        <span className={`w-2 h-2 rounded-full ${project.dependencies_approved ? 'bg-[hsl(var(--chart-4))]' : 'bg-muted'}`}></span>
+                        <span className="text-muted-foreground">Dependencies Approved</span>
                       </div>
                     </div>
 
                     {/* Stats */}
                     {project.stats && (
-                      <div className="text-sm text-slate-600">
+                      <div className="text-sm text-muted-foreground">
                         {project.stats.total_artifacts} artifacts
                       </div>
                     )}
 
                     {/* Created date */}
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-muted-foreground">
                       {new Date(project.created_at).toLocaleDateString()}
                     </div>
                   </div>
@@ -232,7 +232,7 @@ export default function Dashboard() {
         <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle className="text-red-600">Delete Project</DialogTitle>
+              <DialogTitle className="text-destructive">Delete Project</DialogTitle>
               <DialogDescription>
                 Are you sure you want to delete "{selectedProjectToDelete?.name}"? This action cannot be undone and will permanently remove all project data and specifications.
               </DialogDescription>
@@ -253,7 +253,7 @@ export default function Dashboard() {
               >
                 {deleting ? (
                   <>
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-white"></div>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-transparent"></div>
                     Deleting...
                   </>
                 ) : (

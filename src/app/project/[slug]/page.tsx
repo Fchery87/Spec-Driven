@@ -261,22 +261,22 @@ export default function ProjectPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8 flex items-center justify-center">
-        <p className="text-slate-600">Loading project...</p>
+      <main className="min-h-screen bg-gradient-to-br from-background via-background to-muted p-8 flex items-center justify-center">
+        <p className="text-muted-foreground">Loading project...</p>
       </main>
     );
   }
 
   if (error || !project) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+      <main className="min-h-screen bg-gradient-to-br from-background via-background to-muted p-8">
         <div className="max-w-4xl mx-auto">
           <Button variant="ghost" onClick={() => router.back()} className="mb-8">
             ← Back
           </Button>
-          <Card className="border-red-200 bg-red-50">
+          <Card className="border border-destructive/30 bg-destructive/10">
             <CardContent className="pt-6">
-              <p className="text-red-700">{error || 'Project not found'}</p>
+              <p className="text-destructive">{error || 'Project not found'}</p>
             </CardContent>
           </Card>
         </div>
@@ -285,7 +285,7 @@ export default function ProjectPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+    <main className="min-h-screen bg-gradient-to-br from-background via-background to-muted p-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-start mb-8">
@@ -294,12 +294,12 @@ export default function ProjectPage() {
               <ArrowLeft className="h-4 w-4" />
               Back to Projects
             </Button>
-            <h1 className="text-4xl font-bold text-slate-900">{project.name}</h1>
-            <p className="text-slate-600 mt-2">Project slug: {project.slug}</p>
+            <h1 className="text-4xl font-bold text-foreground">{project.name}</h1>
+            <p className="text-muted-foreground mt-2">Project slug: {project.slug}</p>
           </div>
           <div className="text-right">
             <Badge className="mb-2">{project.current_phase}</Badge>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-muted-foreground">
               {project.phases_completed.length} of {PHASES.length} phases completed
             </p>
           </div>
@@ -307,9 +307,9 @@ export default function ProjectPage() {
 
         {/* Error alert */}
         {error && (
-          <Card className="mb-8 border-red-200 bg-red-50">
+          <Card className="mb-8 border border-destructive/30 bg-destructive/10">
             <CardContent className="pt-6">
-              <p className="text-red-700">{error}</p>
+              <p className="text-destructive">{error}</p>
             </CardContent>
           </Card>
         )}
@@ -353,7 +353,7 @@ export default function ProjectPage() {
 
         {/* Stack selection modal/section */}
         {showStackSelection && (
-          <Card className="mb-8 border-blue-200 bg-blue-50">
+          <Card className="mb-8 border border-[hsl(var(--chart-2))]/30 bg-[hsl(var(--chart-2))]/10">
             <CardHeader>
               <CardTitle>Select Technology Stack</CardTitle>
               <CardDescription>
@@ -379,13 +379,13 @@ export default function ProjectPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <h3 className="font-semibold text-slate-900 mb-2">Phase Description</h3>
-                  <p className="text-slate-600">{getPhaseDescription(project.current_phase)}</p>
+                  <h3 className="font-semibold text-foreground mb-2">Phase Description</h3>
+                  <p className="text-muted-foreground">{getPhaseDescription(project.current_phase)}</p>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-slate-900 mb-2">Expected Outputs</h3>
-                  <ul className="list-disc list-inside space-y-1 text-slate-600">
+                  <h3 className="font-semibold text-foreground mb-2">Expected Outputs</h3>
+                  <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                     {getPhaseOutputs(project.current_phase).map((output) => (
                       <li key={output}>{output}</li>
                     ))}
@@ -394,18 +394,18 @@ export default function ProjectPage() {
 
                 {/* Gate information */}
                 {getPhaseGates(project.current_phase).length > 0 && (
-                  <div className="pt-4 border-t border-slate-200">
-                    <h3 className="font-semibold text-slate-900 mb-2">Approval Gates</h3>
+                  <div className="pt-4 border-t border-border">
+                    <h3 className="font-semibold text-foreground mb-2">Approval Gates</h3>
                     <div className="space-y-2">
                       {getPhaseGates(project.current_phase).map((gate) => (
                         <div key={gate} className="flex items-center gap-2">
                           <span className={`w-2 h-2 rounded-full ${
                             (gate === 'stack_approved' && project.stack_approved) ||
                             (gate === 'dependencies_approved' && project.dependencies_approved)
-                              ? 'bg-green-500'
-                              : 'bg-red-500'
+                              ? 'bg-[hsl(var(--chart-4))]'
+                              : 'bg-destructive'
                           }`}></span>
-                          <span className="text-sm text-slate-600 capitalize">
+                          <span className="text-sm text-muted-foreground capitalize">
                             {gate.replace(/_/g, ' ')}
                           </span>
                         </div>
@@ -427,13 +427,13 @@ export default function ProjectPage() {
                 <div className="space-y-4">
                   {PHASES.map((phase) => (
                     <div key={phase}>
-                      <h4 className="font-medium text-sm text-slate-900 mb-2">{phase}</h4>
+                      <h4 className="font-medium text-sm text-foreground mb-2">{phase}</h4>
                       {artifacts[phase] && artifacts[phase].length > 0 ? (
                         <ul className="space-y-1">
                           {artifacts[phase].map((artifact: any) => (
                             <li
                               key={artifact.name}
-                              className="text-xs text-slate-600 truncate hover:text-blue-600 hover:bg-slate-100 cursor-pointer flex items-center gap-1 px-2 py-1 rounded transition-colors duration-200"
+                              className="text-xs text-muted-foreground truncate hover:text-[hsl(var(--chart-2))] hover:bg-muted cursor-pointer flex items-center gap-1 px-2 py-1 rounded transition-colors duration-200"
                               title={`Click to view ${artifact.name}`}
                               onClick={() => handleViewArtifact(artifact, phase)}
                             >
@@ -443,7 +443,7 @@ export default function ProjectPage() {
                           ))}
                         </ul>
                       ) : (
-                        <p className="text-xs text-slate-400">No artifacts yet</p>
+                        <p className="text-xs text-muted-foreground">No artifacts yet</p>
                       )}
                     </div>
                   ))}
@@ -469,21 +469,21 @@ export default function ProjectPage() {
                     >
                       {executing ? (
                         <>
-                          <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-slate-200 border-t-white"></div>
+                          <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-border border-t-transparent"></div>
                           Generating Artifacts with AI...
                         </>
                       ) : (
                         `Execute ${project.current_phase} Phase`
                       )}
                     </Button>
-                    <p className="text-xs text-slate-500 mt-2 text-center">
+                    <p className="text-xs text-muted-foreground mt-2 text-center">
                       AI agents will analyze your project and generate the required specifications
                     </p>
                   </div>
                 )}
 
                 {/* Secondary actions */}
-                <div className="flex gap-4 pt-2 border-t border-slate-200">
+                <div className="flex gap-4 pt-2 border-t border-border">
                   <Button
                     onClick={handlePhaseAdvance}
                     disabled={advancing || executing}
@@ -518,16 +518,16 @@ export default function ProjectPage() {
         )}
 
         {project.current_phase === 'DONE' && (
-          <Card className="bg-green-50 border-green-200">
+          <Card className="bg-[hsl(var(--chart-4))]/10 border border-[hsl(var(--chart-4))]/30">
             <CardContent className="pt-6">
               <div className="text-center mb-6">
                 <div className="flex items-center justify-center gap-2 mb-4">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <p className="text-green-700 font-semibold">
+                  <CheckCircle className="h-5 w-5 text-[hsl(var(--chart-4))]" />
+                  <p className="text-[hsl(var(--chart-4))] font-semibold">
                     Project specification complete! Ready for code generation.
                   </p>
                 </div>
-                <p className="text-slate-600 text-sm">
+                <p className="text-muted-foreground text-sm">
                   Generate the HANDOFF.md document that contains all specifications compiled into a single prompt for LLM-based code generation.
                 </p>
               </div>
@@ -536,15 +536,15 @@ export default function ProjectPage() {
                 {/* Check if handoff already exists */}
                 {artifacts['DONE'] && artifacts['DONE'].some((a: any) => a.name === 'HANDOFF.md') ? (
                   <div className="space-y-3">
-                    <div className="bg-emerald-100 border border-emerald-300 rounded-lg p-4 text-center">
-                      <p className="text-emerald-800 font-semibold flex items-center justify-center gap-2">
-                        <CheckCircle className="h-4 w-4" />
+                    <div className="bg-[hsl(var(--chart-4))]/15 border border-[hsl(var(--chart-4))]/30 rounded-lg p-4 text-center">
+                      <p className="text-[hsl(var(--chart-4))] font-semibold flex items-center justify-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-[hsl(var(--chart-4))]" />
                         HANDOFF.md has been generated
                       </p>
                     </div>
                     <Button
                       onClick={handleDownloadSpecs}
-                      className="w-full flex items-center justify-center gap-2 h-12 bg-blue-600 hover:bg-blue-700"
+                      className="w-full flex items-center justify-center gap-2 h-12 bg-primary hover:bg-primary/80"
                     >
                       <Download className="h-4 w-4" />
                       Download All Specifications (ZIP)
@@ -563,14 +563,14 @@ export default function ProjectPage() {
                       </>
                     ) : (
                       <>
-                        <CheckCircle className="h-4 w-4" />
+                        <CheckCircle className="h-4 w-4 text-[hsl(var(--chart-4))]" />
                         Generate HANDOFF.md
                       </>
                     )}
                   </Button>
                 )}
 
-                <div className="flex gap-4 justify-center pt-2 border-t border-green-200">
+                <div className="flex gap-4 justify-center pt-2 border-t border-[hsl(var(--chart-4))]/30">
                   <Button
                     onClick={() => router.push('/dashboard')}
                     variant="outline"
@@ -596,7 +596,7 @@ export default function ProjectPage() {
         <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle className="text-red-600">Delete Project</DialogTitle>
+              <DialogTitle className="text-destructive">Delete Project</DialogTitle>
               <DialogDescription>
                 Are you sure you want to delete "{project?.name}"? This action cannot be undone and will permanently remove all project data and specifications.
               </DialogDescription>
@@ -617,7 +617,7 @@ export default function ProjectPage() {
               >
                 {deleting ? (
                   <>
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-white"></div>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-transparent"></div>
                     Deleting...
                   </>
                 ) : (

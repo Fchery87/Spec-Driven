@@ -49,7 +49,7 @@ export default function CreateProject() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+    <main className="min-h-screen bg-gradient-to-br from-background via-background to-muted p-8">
       <div className="max-w-2xl mx-auto">
         <Button
           variant="ghost"
@@ -72,7 +72,7 @@ export default function CreateProject() {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Name */}
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-slate-900">
+                <label className="block text-sm font-medium text-foreground">
                   Project Name *
                 </label>
                 <Input
@@ -83,14 +83,14 @@ export default function CreateProject() {
                   disabled={loading}
                   className="w-full"
                 />
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-muted-foreground">
                   A clear, descriptive name for your project
                 </p>
               </div>
 
               {/* Description */}
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-slate-900">
+                <label className="block text-sm font-medium text-foreground">
                   Brief Description
                 </label>
                 <textarea
@@ -99,17 +99,17 @@ export default function CreateProject() {
                   onChange={(e) => setDescription(e.target.value)}
                   disabled={loading}
                   rows={4}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2"
+                  className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                 />
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-muted-foreground">
                   Optional: Helps provide context during spec generation
                 </p>
               </div>
 
               {/* Error */}
               {error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-                  <p className="text-sm text-red-700">{error}</p>
+                <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-md">
+                  <p className="text-sm text-destructive">{error}</p>
                 </div>
               )}
 
@@ -140,11 +140,11 @@ export default function CreateProject() {
           <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-center gap-2 mb-2">
-                <Lightbulb className="h-5 w-5 text-amber-500" />
+                <Lightbulb className="h-5 w-5 text-primary" />
                 <CardTitle className="text-lg">ANALYSIS</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="text-sm text-slate-600">
+            <CardContent className="text-sm text-muted-foreground">
               Your initial project will start in the ANALYSIS phase where AI agents generate:
               <ul className="mt-2 space-y-1 list-disc list-inside">
                 <li>Project Constitution</li>
@@ -157,11 +157,11 @@ export default function CreateProject() {
           <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-center gap-2 mb-2">
-                <Settings className="h-5 w-5 text-slate-600" />
+                <Settings className="h-5 w-5 text-muted-foreground" />
                 <CardTitle className="text-lg">Workflow</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="text-sm text-slate-600">
+            <CardContent className="text-sm text-muted-foreground">
               Projects progress through 6 phases:
               <ul className="mt-2 space-y-1 list-disc list-inside text-xs">
                 <li>Analysis → Stack Selection</li>
@@ -174,11 +174,11 @@ export default function CreateProject() {
           <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-center gap-2 mb-2">
-                <Zap className="h-5 w-5 text-yellow-500" />
+                <Zap className="h-5 w-5 text-[hsl(var(--chart-2))]" />
                 <CardTitle className="text-lg">Output</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="text-sm text-slate-600">
+            <CardContent className="text-sm text-muted-foreground">
               At the end, you'll get:
               <ul className="mt-2 space-y-1 list-disc list-inside">
                 <li>Complete specifications</li>

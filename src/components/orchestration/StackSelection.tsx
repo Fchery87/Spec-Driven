@@ -127,12 +127,12 @@ export function StackSelection({
     switch (stackId) {
       case 'nextjs_only_web':
       case 'nextjs_only_expo':
-        return <Zap className="h-6 w-6 text-blue-600" />
+        return <Zap className="h-6 w-6 text-primary" />
       case 'hybrid_nextjs_fastapi_web':
       case 'hybrid_nextjs_fastapi_expo':
-        return <Cpu className="h-6 w-6 text-violet-600" />
+        return <Cpu className="h-6 w-6 text-[hsl(var(--chart-3))]" />
       default:
-        return <Shield className="h-6 w-6 text-slate-600" />
+        return <Shield className="h-6 w-6 text-muted-foreground" />
     }
   }
 
@@ -140,12 +140,12 @@ export function StackSelection({
     switch (stackId) {
       case 'nextjs_only_web':
       case 'nextjs_only_expo':
-        return 'border-blue-200 bg-blue-50'
+        return 'border-[hsl(var(--chart-2))]/40 bg-[hsl(var(--chart-2))]/10'
       case 'hybrid_nextjs_fastapi_web':
       case 'hybrid_nextjs_fastapi_expo':
-        return 'border-violet-200 bg-violet-50'
+        return 'border-[hsl(var(--chart-3))]/40 bg-[hsl(var(--chart-3))]/10'
       default:
-        return 'border-slate-200 bg-slate-50'
+        return 'border-border bg-muted'
     }
   }
 
@@ -154,10 +154,10 @@ export function StackSelection({
       {/* Platform Selector */}
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold mb-4 flex items-center justify-center gap-2">
-          <Sparkles className="h-6 w-6 text-violet-600" />
+          <Sparkles className="h-6 w-6 text-[hsl(var(--chart-2))]" />
           Choose Your Project Type
         </h2>
-        <p className="text-slate-600 max-w-2xl mx-auto mb-8">
+        <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
           First, let's determine whether you're building a web application, mobile application, or both.
         </p>
 
@@ -192,10 +192,10 @@ export function StackSelection({
       {platform && (
         <>
           <div className="text-center mb-6">
-            <h3 className="text-xl font-bold text-slate-900 mb-2">
+            <h3 className="text-xl font-bold text-foreground mb-2">
               Choose Your Technology Stack
             </h3>
-            <p className="text-slate-600">
+            <p className="text-muted-foreground">
               Select the technology stack that best fits your {platform === 'web' ? 'web application' : 'cross-platform'} requirements.
             </p>
           </div>
@@ -207,7 +207,7 @@ export function StackSelection({
                 key={stack.id}
                 className={`
                   cursor-pointer transition-all hover:shadow-lg
-                  ${selectedStack === stack.id ? 'ring-2 ring-blue-500 ' + getStackColor(stack.id) : 'hover:scale-105'}
+                  ${selectedStack === stack.id ? 'ring-2 ring-primary ' + getStackColor(stack.id) : 'hover:scale-105'}
                 `}
                 onClick={() => handleStackSelect(stack.id)}
               >
@@ -218,7 +218,7 @@ export function StackSelection({
                       <CardTitle className="text-xl">{stack.name}</CardTitle>
                     </div>
                     {selectedStack === stack.id && (
-                      <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+                      <CheckCircle2 className="h-6 w-6 text-[hsl(var(--chart-4))]" />
                     )}
                   </div>
                   <CardDescription className="text-base">
@@ -259,7 +259,7 @@ export function StackSelection({
                     <ul className="text-sm space-y-1">
                       {stack.strengths.map((strength, index) => (
                         <li key={index} className="flex items-start gap-2">
-                          <CheckCircle2 className="h-3 w-3 text-emerald-600 mt-0.5 flex-shrink-0" />
+                          <CheckCircle2 className="h-3 w-3 text-[hsl(var(--chart-4))] mt-0.5 flex-shrink-0" />
                           {strength}
                         </li>
                       ))}
@@ -272,7 +272,7 @@ export function StackSelection({
                     <ul className="text-sm space-y-1">
                       {stack.tradeoffs.map((tradeoff, index) => (
                         <li key={index} className="flex items-start gap-2">
-                          <AlertCircle className="h-3 w-3 text-amber-600 mt-0.5 flex-shrink-0" />
+                          <AlertCircle className="h-3 w-3 text-[hsl(var(--chart-3))] mt-0.5 flex-shrink-0" />
                           {tradeoff}
                         </li>
                       ))}
@@ -289,10 +289,10 @@ export function StackSelection({
           </div>
 
           {/* Custom Stack Option */}
-          <Card className="border-dashed border-slate-300">
+          <Card className="border-dashed border-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Shield className="h-6 w-6 text-slate-600" />
+                <Shield className="h-6 w-6 text-muted-foreground" />
                 Custom Stack
               </CardTitle>
               <CardDescription>
@@ -389,10 +389,10 @@ export function StackSelection({
 
           {/* Selection Summary */}
           {selectedStack && !showCustom && (
-            <Card className="bg-green-50 border-green-200">
+            <Card className="bg-[hsl(var(--chart-4))]/10 border border-[hsl(var(--chart-4))]/30">
               <CardContent className="pt-6">
-                <div className="flex items-center gap-2 text-green-800">
-                  <CheckCircle2 className="h-5 w-5" />
+                <div className="flex items-center gap-2 text-[hsl(var(--chart-4))]">
+                  <CheckCircle2 className="h-5 w-5 text-[hsl(var(--chart-4))]" />
                   <span className="font-semibold">
                     Selected: {stacks.find(s => s.id === selectedStack)?.name} for {platform} apps
                   </span>

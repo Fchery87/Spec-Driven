@@ -26,24 +26,24 @@ interface ErrorDisplayProps {
 
 const severityConfig = {
   error: {
-    bgColor: 'bg-red-50 dark:bg-red-900/20',
-    borderColor: 'border-red-200 dark:border-red-800',
-    iconColor: 'text-red-600 dark:text-red-400',
-    textColor: 'text-red-900 dark:text-red-100',
+    bgColor: 'bg-destructive/10',
+    borderColor: 'border-destructive/30',
+    iconColor: 'text-destructive',
+    textColor: 'text-destructive',
     icon: AlertCircle
   },
   warning: {
-    bgColor: 'bg-amber-50 dark:bg-amber-900/20',
-    borderColor: 'border-amber-200 dark:border-amber-800',
-    iconColor: 'text-amber-600 dark:text-amber-400',
-    textColor: 'text-amber-900 dark:text-amber-100',
+    bgColor: 'bg-[hsl(var(--chart-3))]/10',
+    borderColor: 'border-[hsl(var(--chart-3))]/30',
+    iconColor: 'text-[hsl(var(--chart-3))]',
+    textColor: 'text-[hsl(var(--chart-3))]',
     icon: AlertTriangle
   },
   info: {
-    bgColor: 'bg-blue-50 dark:bg-blue-900/20',
-    borderColor: 'border-blue-200 dark:border-blue-800',
-    iconColor: 'text-blue-600 dark:text-blue-400',
-    textColor: 'text-blue-900 dark:text-blue-100',
+    bgColor: 'bg-[hsl(var(--chart-1))]/10',
+    borderColor: 'border-[hsl(var(--chart-1))]/30',
+    iconColor: 'text-[hsl(var(--chart-1))]',
+    textColor: 'text-[hsl(var(--chart-1))]',
     icon: Info
   }
 };
