@@ -1,0 +1,54 @@
+import Link from "next/link"
+
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+
+import { SiteLogo } from "./SiteLogo"
+
+const navLinks = [
+  { label: "Overview", href: "/" },
+  { label: "Dashboard", href: "/dashboard" },
+  { label: "Create Project", href: "/project/create" },
+]
+
+interface SiteHeaderProps {
+  className?: string
+}
+
+export function SiteHeader({ className }: SiteHeaderProps) {
+  return (
+    <header
+      className={cn(
+        "sticky top-0 z-50 border-b border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70",
+        className
+      )}
+    >
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 md:px-6">
+        <Link href="/" className="flex items-center gap-2" aria-label="Spec-Driven Home">
+          <SiteLogo />
+        </Link>
+
+        <nav className="hidden items-center gap-6 text-sm font-medium text-muted-foreground md:flex">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="transition-colors hover:text-foreground"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" asChild className="hidden sm:flex">
+            <Link href="/dashboard">Go to Dashboard</Link>
+          </Button>
+          <Button size="sm" className="shadow-sm" asChild>
+            <Link href="/project/create">Start a Project</Link>
+          </Button>
+        </div>
+      </div>
+    </header>
+  )
+}
