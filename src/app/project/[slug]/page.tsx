@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { PhaseStepper } from '@/components/orchestration/PhaseStepper';
 import { StackSelection } from '@/components/orchestration/StackSelection';
+import { ArtifactViewer } from '@/components/orchestration/ArtifactViewer';
 import { ArrowLeft, FileText, CheckCircle, Trash2 } from 'lucide-react';
 
 interface Project {
@@ -45,6 +46,8 @@ export default function ProjectPage() {
   const [deleting, setDeleting] = useState(false);
   const [executing, setExecuting] = useState(false);
   const [advancing, setAdvancing] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [selectedArtifact, setSelectedArtifact] = useState<{ filename: string; content: string; phase: string } | null>(null);
 
   useEffect(() => {
     fetchProject();
@@ -167,6 +170,15 @@ export default function ProjectPage() {
       setError('Failed to approve stack');
       console.error(err);
     }
+  };
+
+  const handleViewArtifact = (artifact: any, phase: string) => {
+    setSelectedArtifact({
+      filename: artifact.name,
+      content: artifact.content,
+      phase: phase
+    });
+    setViewerOpen(true);
   };
 
   const handleDeleteProject = async () => {
@@ -385,8 +397,9 @@ export default function ProjectPage() {
                           {artifacts[phase].map((artifact: any) => (
                             <li
                               key={artifact.name}
-                              className="text-xs text-slate-600 truncate hover:text-slate-900 cursor-pointer flex items-center gap-1"
-                              title={artifact.name}
+                              className="text-xs text-slate-600 truncate hover:text-blue-600 hover:bg-slate-100 cursor-pointer flex items-center gap-1 px-2 py-1 rounded transition-colors duration-200"
+                              title={`Click to view ${artifact.name}`}
+                              onClick={() => handleViewArtifact(artifact, phase)}
                             >
                               <FileText className="h-3 w-3 flex-shrink-0" />
                               {artifact.name}
@@ -532,6 +545,17 @@ export default function ProjectPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Artifact Viewer Modal */}
+        {selectedArtifact && (
+          <ArtifactViewer
+            open={viewerOpen}
+            onOpenChange={setViewerOpen}
+            filename={selectedArtifact.filename}
+            content={selectedArtifact.content}
+            phase={selectedArtifact.phase}
+          />
+        )}
       </div>
     </main>
   );
