@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getProjectMetadata, saveProjectMetadata, listArtifacts } from '@/app/api/lib/project-utils';
 import { OrchestratorEngine } from '@/backend/services/orchestrator/orchestrator_engine';
 
+// Increase timeout for LLM operations (in seconds)
+export const maxDuration = 300; // 5 minutes
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { slug: string } }

@@ -16,12 +16,21 @@ export class GeminiClient {
       throw new Error('Gemini API key not configured');
     }
 
+    const fullPrompt = this.buildPrompt(prompt, context);
+    console.log('Generating completion with Gemini:', {
+      model: this.config.model,
+      promptLength: fullPrompt.length,
+      temperature: this.config.temperature,
+      maxTokens: this.config.max_tokens,
+      contextDocsCount: context?.length || 0
+    });
+
     const requestBody = {
       contents: [
         {
           parts: [
             {
-              text: this.buildPrompt(prompt, context)
+              text: fullPrompt
             }
           ]
         }
@@ -58,14 +67,31 @@ export class GeminiClient {
 
         if (!response.ok) {
           const errorText = await response.text();
+          console.error('Gemini API error details:', {
+            status: response.status,
+            statusText: response.statusText,
+            errorText,
+            model: this.config.model,
+            attempt: attempt + 1
+          });
           throw new Error(`Gemini API error: ${response.status} ${response.statusText} - ${errorText}`);
         }
 
         const data = await response.json();
+        console.log('Gemini API success:', {
+          model: data.modelVersion,
+          candidatesCount: data.candidates?.length,
+          finishReason: data.candidates?.[0]?.finishReason
+        });
 
         return this.parseResponse(data);
       } catch (error) {
         lastError = error as Error;
+        console.error('Gemini API call error:', {
+          attempt: attempt + 1,
+          maxRetries: retries,
+          error: error instanceof Error ? error.message : String(error)
+        });
 
         // If it's a rate limit error and we have retries left, continue
         if (error instanceof Error && error.message.includes('429') && attempt < retries) {

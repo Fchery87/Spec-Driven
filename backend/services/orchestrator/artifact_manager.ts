@@ -4,7 +4,7 @@ import { resolve, dirname } from 'path';
 import { createHash } from 'crypto';
 
 export class ArtifactManager {
-  private basePath: string = '/projects';
+  private basePath: string = resolve(process.cwd(), 'projects');
 
   /**
    * Validate artifacts exist for a project

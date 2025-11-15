@@ -10,7 +10,10 @@ export class ConfigLoader {
    * Load orchestrator specification from YAML file
    */
   loadSpec(): OrchestratorSpec {
-    if (this.spec) {
+    // In development mode, always reload to pick up changes
+    const isDevelopment = process.env.NODE_ENV === 'development';
+
+    if (this.spec && !isDevelopment) {
       return this.spec;
     }
 
@@ -284,7 +287,7 @@ export class ConfigLoader {
       },
       llm_config: {
         provider: 'gemini',
-        model: 'gemini-2.0-flash-exp',
+        model: 'gemini-2.5-flash',
         max_tokens: 8192,
         temperature: 0.7,
         timeout_seconds: 120,
