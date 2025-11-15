@@ -42,10 +42,10 @@ export function SiteHeader({ className }: SiteHeaderProps) {
 
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" asChild className="hidden sm:flex">
-            <Link href="/dashboard">Go to Dashboard</Link>
+            <Link href="/sign-in">Sign In</Link>
           </Button>
           <Button size="sm" className="shadow-sm" asChild>
-            <Link href="/project/create">Start a Project</Link>
+            <Link href="/sign-up">Create Account</Link>
           </Button>
         </div>
       </div>
