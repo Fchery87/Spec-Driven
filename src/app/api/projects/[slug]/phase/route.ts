@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getProjectMetadata, saveProjectMetadata, listArtifacts } from '@/app/api/lib/project-utils';
+import { getProjectMetadata, saveProjectMetadata, listArtifacts, persistProjectToDB } from '@/app/api/lib/project-utils';
 
 const PHASES = ['ANALYSIS', 'STACK_SELECTION', 'SPEC', 'DEPENDENCIES', 'SOLUTIONING', 'DONE'];
 
@@ -70,6 +70,7 @@ export async function POST(
       };
 
       saveProjectMetadata(slug, updated);
+      await persistProjectToDB(slug, updated);
 
       return NextResponse.json({
         success: true,

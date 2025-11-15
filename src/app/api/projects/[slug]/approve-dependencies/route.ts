@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getProjectMetadata, saveProjectMetadata, writeArtifact } from '@/app/api/lib/project-utils';
+import { getProjectMetadata, saveProjectMetadata, writeArtifact, persistProjectToDB } from '@/app/api/lib/project-utils';
 
 export async function POST(
   request: NextRequest,
@@ -39,6 +39,7 @@ export async function POST(
     };
 
     saveProjectMetadata(slug, updated);
+    await persistProjectToDB(slug, updated);
 
     // Create approval artifact
     const approvalContent = `---

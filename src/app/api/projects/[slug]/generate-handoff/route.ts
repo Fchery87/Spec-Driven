@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getProjectMetadata, saveProjectMetadata, saveArtifact } from '@/app/api/lib/project-utils';
+import { getProjectMetadata, saveProjectMetadata, saveArtifact, persistProjectToDB } from '@/app/api/lib/project-utils';
 import { HandoffGenerator } from '@/backend/services/file_system/handoff_generator';
 
 export async function POST(
@@ -45,6 +45,7 @@ export async function POST(
     };
 
     saveProjectMetadata(slug, updated);
+    await persistProjectToDB(slug, updated);
 
     return NextResponse.json({
       success: true,

@@ -80,22 +80,22 @@ export class AgentExecutor {
         brief,
         phase: 'stack_selection'
       });
-    } else if (context.phase === 'SPEC' && prd) {
+    } else if (context.phase === 'SPEC') {
       // Generate data model and API spec
       prompt = this.buildAgentPrompt(agentSpec.prompt_template, {
         brief,
-        prd,
+        prd: prd || '',
         phase: 'spec'
       });
-      artifacts['PRD.md'] = prd;
-    } else if (context.phase === 'SOLUTIONING' && prd) {
+      if (prd) artifacts['PRD.md'] = prd;
+    } else if (context.phase === 'SOLUTIONING') {
       // Generate architecture document
       prompt = this.buildAgentPrompt(agentSpec.prompt_template, {
         brief,
-        prd,
+        prd: prd || '',
         phase: 'solutioning'
       });
-      artifacts['PRD.md'] = prd;
+      if (prd) artifacts['PRD.md'] = prd;
     } else {
       throw new Error(`Architect agent not configured for phase: ${context.phase}`);
     }

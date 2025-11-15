@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getProjectMetadata, saveProjectMetadata, listArtifacts } from '@/app/api/lib/project-utils';
+import { getProjectMetadata, saveProjectMetadata, listArtifacts, persistProjectToDB } from '@/app/api/lib/project-utils';
 import { OrchestratorEngine } from '@/backend/services/orchestrator/orchestrator_engine';
 
 // Increase timeout for LLM operations (in seconds)
@@ -107,6 +107,9 @@ export async function POST(
     };
 
     saveProjectMetadata(slug, updated);
+
+    // Persist to database
+    await persistProjectToDB(slug, updated);
 
     return NextResponse.json({
       success: true,
