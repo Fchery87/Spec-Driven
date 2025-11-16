@@ -99,7 +99,8 @@ function handleError(error: unknown, requestId: string): NextResponse {
   } else if (error instanceof Error) {
     logger.error(`[${requestId}] Error: ${error.message}`, error);
   } else {
-    logger.error(`[${requestId}] Unknown error: ${String(error)}`);
+    const err = new Error(String(error));
+    logger.error(`[${requestId}] Unknown error:`, err);
   }
 
   // Format response

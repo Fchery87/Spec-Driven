@@ -3,8 +3,10 @@ import { createReadStream, createWriteStream, existsSync, statSync, readdirSync 
 import { resolve as resolvePath } from 'path';
 import { createHash } from 'crypto';
 import { promisify } from 'util';
-import archiver from 'archiver';
 import { logger } from '@/lib/logger';
+
+// Using require for archiver to avoid TypeScript declaration issues
+const archiver = require('archiver');
 
 export interface ZipConfig {
   include_metadata: boolean;
