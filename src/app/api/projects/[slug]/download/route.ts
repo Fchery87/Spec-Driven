@@ -88,13 +88,13 @@ export async function GET(
       // Add all artifacts from all phases
       const allPhases = ['ANALYSIS', 'STACK_SELECTION', 'SPEC', 'DEPENDENCIES', 'SOLUTIONING', 'DONE'];
       const { readFileSync } = require('fs');
-      const { resolve } = require('path');
+      const { resolve: pathResolve } = require('path');
 
       for (const phase of allPhases) {
         const artifacts = listArtifacts(slug, phase);
         for (const artifact of artifacts) {
           try {
-            const artifactPath = resolve(process.cwd(), 'projects', slug, 'specs', phase, 'v1', artifact.name);
+            const artifactPath = pathResolve(process.cwd(), 'projects', slug, 'specs', phase, 'v1', artifact.name);
             const content = readFileSync(artifactPath, 'utf8');
             archive.append(content, { name: `${slug}/specs/${phase}/${artifact.name}` });
           } catch (err) {
