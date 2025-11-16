@@ -2,9 +2,18 @@ import { ProjectArtifact, ValidationResult } from '@/types/orchestrator';
 import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { createHash } from 'crypto';
+import { Archiver } from '../file_system/archiver';
+import { ProjectStorage } from '../file_system/project_storage';
 
 export class ArtifactManager {
   private basePath: string = resolve(process.cwd(), 'projects');
+  private projectStorage: ProjectStorage;
+  private archiver: Archiver;
+
+  constructor() {
+    this.projectStorage = new ProjectStorage({ base_path: this.basePath });
+    this.archiver = new Archiver(this.projectStorage);
+  }
 
   /**
    * Validate artifacts exist for a project
@@ -239,45 +248,16 @@ export class ArtifactManager {
   }
 
   /**
-   * Archive project artifacts into ZIP (placeholder)
+   * Archive project artifacts into ZIP
    */
   async createProjectZip(projectSlug: string): Promise<Buffer> {
-    // This would create a ZIP file with all project artifacts
-    // For now, return a placeholder
-    const projectPath = this.getProjectPath(projectSlug);
-    
-    // In production, use a library like archiver or jszip
-    const placeholder = `Project ZIP for ${projectSlug}`;
-    return Buffer.from(placeholder);
+    return this.archiver.createProjectZip(projectSlug);
   }
 
   /**
-   * Generate handoff prompt (placeholder)
+   * Generate handoff prompt
    */
   async generateHandoffPrompt(projectSlug: string): Promise<string> {
-    // This would generate the comprehensive HANDOFF.md content
-    // For now, return a placeholder
-    return `# Handoff: ${projectSlug}
-
-This is the master handoff document for LLM code generation.
-
-## Project Context
-[Project details would go here]
-
-## Reading Order
-1. constitution.md
-2. project-brief.md
-3. personas.md
-4. PRD.md
-5. data-model.md
-6. api-spec.json
-7. architecture.md
-8. DEPENDENCIES.md
-9. epics.md
-10. tasks.md
-
-## LLM Prompt
-You are a senior full-stack engineer implementing this project...
-`;
+    return this.archiver.createHandoffPrompt(projectSlug);
   }
 }

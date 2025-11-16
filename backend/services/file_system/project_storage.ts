@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync, readFileSync, readdirSync, statSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync, readFileSync, readdirSync, statSync, unlinkSync, rmSync } from 'fs';
 import { resolve, dirname, basename } from 'path';
 import { createHash } from 'crypto';
 
@@ -190,15 +190,15 @@ export class ProjectStorage {
    */
   deleteArtifact(projectSlug: string, phase: string, artifactName: string, version: number = 1): boolean {
     const artifactPath = this.getArtifactPath(projectSlug, phase, artifactName, version);
-    
+
     try {
       if (existsSync(artifactPath)) {
-        // In a real implementation, you'd use unlinkSync
-        console.log(`Would delete artifact: ${artifactPath}`);
+        unlinkSync(artifactPath);
         return true;
       }
       return false;
-    } catch {
+    } catch (error) {
+      console.error(`Failed to delete artifact ${artifactPath}:`, error);
       return false;
     }
   }
@@ -270,19 +270,19 @@ export class ProjectStorage {
   }
 
   /**
-   * Delete project
+   * Delete project (recursive)
    */
   deleteProject(projectSlug: string): boolean {
     const projectPath = this.getProjectPath(projectSlug);
-    
+
     try {
       if (existsSync(projectPath)) {
-        // In a real implementation, you'd use a recursive delete function
-        console.log(`Would delete project directory: ${projectPath}`);
+        rmSync(projectPath, { recursive: true, force: true });
         return true;
       }
       return false;
-    } catch {
+    } catch (error) {
+      console.error(`Failed to delete project ${projectPath}:`, error);
       return false;
     }
   }
