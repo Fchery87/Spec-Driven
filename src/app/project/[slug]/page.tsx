@@ -97,16 +97,9 @@ export default function ProjectPage() {
       const result = await response.json();
 
       if (result.success) {
-        // Transform the response to match the expected structure
-        // API returns: { phase: "ANALYSIS", artifacts: [...] }
-        // Frontend expects: { ANALYSIS: [...], SPEC: [...], etc }
-        const phase = result.data.phase;
-        const artifactsList = result.data.artifacts;
-
-        setArtifacts(prev => ({
-          ...prev,
-          [phase]: artifactsList
-        }));
+        // API returns: { artifacts: { ANALYSIS: [...], SPEC: [...], etc } }
+        const allArtifacts = result.data.artifacts;
+        setArtifacts(allArtifacts);
       }
     } catch (err) {
       console.error('Failed to fetch artifacts:', err);
