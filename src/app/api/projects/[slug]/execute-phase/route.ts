@@ -97,12 +97,15 @@ export async function POST(
       // Record phase execution failure in database
       try {
         const dbService = new ProjectDBService();
-        await dbService.recordPhaseHistory(
-          project.id,
-          metadata.current_phase,
-          'failed',
-          result.message
-        );
+        const dbProject = await dbService.getProjectBySlug(slug);
+        if (dbProject) {
+          await dbService.recordPhaseHistory(
+            dbProject.id,
+            metadata.current_phase,
+            'failed',
+            result.message
+          );
+        }
       } catch (dbError) {
         console.error('Warning: Failed to record phase failure:', dbError);
       }
@@ -128,11 +131,14 @@ export async function POST(
     // Record phase execution success in database
     try {
       const dbService = new ProjectDBService();
-      await dbService.recordPhaseHistory(
-        project.id,
-        metadata.current_phase,
-        'completed'
-      );
+      const dbProject = await dbService.getProjectBySlug(slug);
+      if (dbProject) {
+        await dbService.recordPhaseHistory(
+          dbProject.id,
+          metadata.current_phase,
+          'completed'
+        );
+      }
     } catch (dbError) {
       console.error('Warning: Failed to record phase completion:', dbError);
       // Don't fail the request if database logging fails
