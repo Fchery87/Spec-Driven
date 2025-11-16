@@ -51,10 +51,21 @@ export async function POST(
     const allPhases = ['ANALYSIS', 'STACK_SELECTION', 'SPEC', 'DEPENDENCIES', 'SOLUTIONING', 'DONE'];
     const currentIndex = allPhases.indexOf(metadata.current_phase);
 
+    // Helper to read artifact file content
+    const { readFileSync } = require('fs');
+    const { resolve } = require('path');
+
     for (let i = 0; i < currentIndex; i++) {
       const phaseArtifacts = listArtifacts(slug, allPhases[i]);
       for (const artifact of phaseArtifacts) {
-        previousArtifacts[`${allPhases[i]}/${artifact.name}`] = artifact.content || '';
+        try {
+          const artifactPath = resolve(process.cwd(), 'projects', slug, 'specs', allPhases[i], 'v1', artifact.name);
+          const content = readFileSync(artifactPath, 'utf8');
+          previousArtifacts[`${allPhases[i]}/${artifact.name}`] = content;
+        } catch (err) {
+          console.warn(`Warning: Failed to read artifact ${allPhases[i]}/${artifact.name}:`, err);
+          previousArtifacts[`${allPhases[i]}/${artifact.name}`] = '';
+        }
       }
     }
 
