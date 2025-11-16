@@ -29,7 +29,10 @@ export class HandoffGenerator {
           }
         } catch (error) {
           const err = error instanceof Error ? error : new Error(String(error));
-          logger.warn(`Failed to read artifact ${artifact.name}:`, err);
+          logger.warn(`Failed to read artifact ${artifact.name}: ${err.message}`, {
+            errorName: err.name,
+            stack: err.stack
+          });
           artifacts[`${phase}/${artifact.name}`] = '';
         }
       }
