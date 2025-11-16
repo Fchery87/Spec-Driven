@@ -43,11 +43,8 @@ export async function POST(
       );
     }
 
-    // Get current phase artifacts for context
-    const artifacts = listArtifacts(slug, metadata.current_phase);
-    const previousArtifacts: Record<string, string> = {};
-
     // Collect artifacts from previous phases for context
+    const previousArtifacts: Record<string, string> = {};
     const allPhases = ['ANALYSIS', 'STACK_SELECTION', 'SPEC', 'DEPENDENCIES', 'SOLUTIONING', 'DONE'];
     const currentIndex = allPhases.indexOf(metadata.current_phase);
 
