@@ -5,8 +5,16 @@ import { prisma } from "@/lib/prisma"
 
 const baseURL = process.env.NEXT_PUBLIC_APP_URL || process.env.AUTH_BASE_URL
 
+// Validate required environment variables
+if (!baseURL && process.env.NODE_ENV === "production") {
+  console.warn(
+    "[AUTH] Warning: NEXT_PUBLIC_APP_URL or AUTH_BASE_URL not set. This is required in production."
+  )
+}
+
 export const auth = betterAuth({
   baseURL,
+  secret: process.env.BETTER_AUTH_SECRET || process.env.AUTH_SECRET,
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
