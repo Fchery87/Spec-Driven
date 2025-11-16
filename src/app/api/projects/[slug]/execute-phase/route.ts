@@ -62,7 +62,7 @@ export async function POST(
     if (metadata.current_phase === 'ANALYSIS') {
       const fs = require('fs');
       const path = require('path');
-      const projectIdeaPath = path.resolve(metadata.project_path, 'project_idea.txt');
+      const projectIdeaPath = path.resolve(process.cwd(), 'projects', slug, 'project_idea.txt');
       if (fs.existsSync(projectIdeaPath)) {
         previousArtifacts['project_idea'] = fs.readFileSync(projectIdeaPath, 'utf8');
       } else {
