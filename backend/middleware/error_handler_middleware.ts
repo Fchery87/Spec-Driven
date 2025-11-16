@@ -97,7 +97,7 @@ function handleError(error: unknown, requestId: string): NextResponse {
       error.details
     );
   } else if (error instanceof Error) {
-    logger.error(`[${requestId}] Error: ${error.message}`, error.stack);
+    logger.error(`[${requestId}] Error: ${error.message}`, error);
   } else {
     logger.error(`[${requestId}] Unknown error:`, error);
   }
