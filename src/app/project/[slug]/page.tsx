@@ -18,7 +18,7 @@ import {
 import { PhaseStepper } from '@/components/orchestration/PhaseStepper';
 import { StackSelection } from '@/components/orchestration/StackSelection';
 import { ArtifactViewer } from '@/components/orchestration/ArtifactViewer';
-import { DependencySelector } from '@/components/orchestration/DependencySelector';
+import { DependencySelector, type DependencySelection } from '@/components/orchestration/DependencySelector';
 import { calculatePhaseStatuses, canAdvanceFromPhase } from '@/utils/phase-status';
 import { ArrowLeft, FileText, CheckCircle, Trash2, Download } from 'lucide-react';
 
@@ -206,26 +206,14 @@ export default function ProjectPage() {
     }
   };
 
-  const handleDependenciesApprove = async ({
-    platform,
-    option,
-    notes,
-  }: {
-    platform: 'web' | 'mobile'
-    option: {
-      id: string
-      title: string
-      frontend: string
-      backend: string
-      database: string
-      deployment: string
-      dependencies: string[]
-    }
-    notes: string
-  }) => {
+  const handleDependenciesApprove = async (selection: DependencySelection) => {
     setApprovingDependencies(true)
     try {
-      const approvalNotes = `
+      let approvalNotes = ''
+
+      if (selection.mode === 'preset') {
+        const { platform, option, notes } = selection
+        approvalNotes = `
 Platform: ${platform.toUpperCase()}
 Selection: ${option.title}
 
@@ -240,6 +228,26 @@ ${option.dependencies.map((dep) => `- ${dep}`).join('\n')}
 Notes:
 ${notes || 'N/A'}
 `.trim()
+      } else {
+        const { customStack, notes } = selection
+        approvalNotes = `
+Platform: CUSTOM TECH STACK
+
+Frontend: ${customStack.frontend}
+Backend: ${customStack.backend}
+Database: ${customStack.database}
+Deployment: ${customStack.deployment}
+
+Dependencies:
+${customStack.dependencies.length ? customStack.dependencies.map((dep) => `- ${dep}`).join('\n') : '- (none specified)'}
+
+Additional Requests:
+${customStack.requests || 'N/A'}
+
+Notes:
+${notes || 'N/A'}
+`.trim()
+      }
 
       const response = await fetch(`/api/projects/${slug}/approve-dependencies`, {
         method: 'POST',
