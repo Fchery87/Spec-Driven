@@ -68,11 +68,12 @@ async function handler(request: AuthenticatedRequest) {
 
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
-    logger.error('Change password error:', error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('Change password error:', err);
     return NextResponse.json(
       {
         success: false,
-        message: `Failed to change password: ${error instanceof Error ? error.message : String(error)}`
+        message: `Failed to change password: ${err.message}`
       },
       { status: 500 }
     );

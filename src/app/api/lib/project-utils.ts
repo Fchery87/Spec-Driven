@@ -119,7 +119,8 @@ export const deleteProject = (slug: string): boolean => {
     }
     return false;
   } catch (error) {
-    logger.error(`Error deleting project ${slug}:`, error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error(`Error deleting project ${slug}:`, err);
     return false;
   }
 };
@@ -158,7 +159,8 @@ export async function persistProjectToDB(slug: string, metadata: ProjectMetadata
       });
     }
   } catch (error) {
-    logger.error(`Error persisting project ${slug} to database:`, error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error(`Error persisting project ${slug} to database:`, err);
   }
 }
 
@@ -167,7 +169,8 @@ export async function deleteProjectFromDB(slug: string): Promise<boolean> {
     const db = await import('@/lib/db');
     return await db.deleteProject(slug);
   } catch (error) {
-    logger.error(`Error deleting project ${slug} from database:`, error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error(`Error deleting project ${slug} from database:`, err);
     return false;
   }
 }

@@ -48,7 +48,8 @@ export async function POST(
         await dbService.saveArtifact(project.id, 'DONE', 'HANDOFF.md', handoffContent);
       }
     } catch (dbError) {
-      logger.error('Warning: Failed to log HANDOFF.md to database:', dbError);
+      const dbErr = dbError instanceof Error ? dbError : new Error(String(dbError));
+      logger.error('Warning: Failed to log HANDOFF.md to database:', dbErr);
       // Don't fail the request if database logging fails
     }
 
@@ -74,13 +75,12 @@ export async function POST(
       }
     });
   } catch (error) {
-    logger.error('Error generating handoff:', error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('Error generating handoff:', err);
     return NextResponse.json(
       {
         success: false,
-        error: `Failed to generate handoff: ${
-          error instanceof Error ? error.message : String(error)
-        }`
+        error: `Failed to generate handoff: ${err.message}`
       },
       { status: 500 }
     );

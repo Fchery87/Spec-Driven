@@ -27,7 +27,8 @@ export async function GET(
       }
     });
   } catch (error) {
-    logger.error('Error getting project:', error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('Error getting project:', err);
     return NextResponse.json(
       { success: false, error: 'Failed to get project' },
       { status: 500 }
@@ -68,7 +69,8 @@ export async function PUT(
       data: updated
     });
   } catch (error) {
-    logger.error('Error updating project:', error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('Error updating project:', err);
     return NextResponse.json(
       { success: false, error: 'Failed to update project' },
       { status: 500 }
@@ -114,7 +116,8 @@ export async function DELETE(
       }
     });
   } catch (error) {
-    logger.error('Error deleting project:', error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('Error deleting project:', err);
     return NextResponse.json(
       { success: false, error: 'Failed to delete project' },
       { status: 500 }

@@ -1,6 +1,6 @@
 import { ProjectStorage } from './project_storage';
 import { createReadStream, createWriteStream, existsSync, statSync, readdirSync } from 'fs';
-import { resolve } from 'path';
+import { resolve as resolvePath } from 'path';
 import { createHash } from 'crypto';
 import { promisify } from 'util';
 import archiver from 'archiver';
@@ -71,20 +71,20 @@ export class Archiver {
 
         // Add files to archive
         // Add HANDOFF.md if it exists
-        const handoffPath = resolve(projectPath, 'HANDOFF.md');
+        const handoffPath = resolvePath(projectPath, 'HANDOFF.md');
         if (existsSync(handoffPath)) {
           archive.file(handoffPath, { name: 'HANDOFF.md' });
         }
 
         // Add specs directory
-        const specsPath = resolve(projectPath, 'specs');
+        const specsPath = resolvePath(projectPath, 'specs');
         if (existsSync(specsPath)) {
           archive.directory(specsPath, 'specs');
         }
 
         // Add metadata if requested
         if (zipConfig.include_metadata) {
-          const metadataPath = resolve(projectPath, 'metadata.json');
+          const metadataPath = resolvePath(projectPath, 'metadata.json');
           if (existsSync(metadataPath)) {
             archive.file(metadataPath, { name: 'metadata.json' });
           }
@@ -92,7 +92,7 @@ export class Archiver {
 
         // Add .ai-config if requested
         if (zipConfig.include_ai_config) {
-          const aiConfigPath = resolve(projectPath, '.ai-config');
+          const aiConfigPath = resolvePath(projectPath, '.ai-config');
           if (existsSync(aiConfigPath)) {
             archive.directory(aiConfigPath, '.ai-config');
           }
@@ -100,7 +100,7 @@ export class Archiver {
 
         // Add docs if requested
         if (zipConfig.include_docs) {
-          const docsPath = resolve(projectPath, 'docs');
+          const docsPath = resolvePath(projectPath, 'docs');
           if (existsSync(docsPath)) {
             archive.directory(docsPath, 'docs');
           }
@@ -136,7 +136,7 @@ export class Archiver {
     ];
 
     for (const file of rootFiles) {
-      const filePath = resolve(projectPath, file);
+      const filePath = resolvePath(projectPath, file);
       if (this.fileExists(filePath)) {
         const stats = await this.getFileStats(filePath);
         manifest.files.push({
@@ -177,7 +177,7 @@ export class Archiver {
       ];
 
       for (const file of aiConfigFiles) {
-        const filePath = resolve(projectPath, file);
+        const filePath = resolvePath(projectPath, file);
         if (this.fileExists(filePath)) {
           const stats = await this.getFileStats(filePath);
           manifest.files.push({
@@ -199,7 +199,7 @@ export class Archiver {
       ];
 
       for (const file of docFiles) {
-        const filePath = resolve(projectPath, file);
+        const filePath = resolvePath(projectPath, file);
         if (this.fileExists(filePath)) {
           const stats = await this.getFileStats(filePath);
           manifest.files.push({
@@ -228,8 +228,8 @@ export class Archiver {
     }
 
     // Read key artifacts
-    const constitution = this.safeReadFile(resolve(projectPath, 'constitution.md'));
-    const brief = this.safeReadFile(resolve(projectPath, 'project-brief.md'));
+    const constitution = this.safeReadFile(resolvePath(projectPath, 'constitution.md'));
+    const brief = this.safeReadFile(resolvePath(projectPath, 'project-brief.md'));
     const prd = this.safeReadFile(this.projectStorage.getArtifactPath(projectSlug, 'SPEC', 'PRD.md'));
 
     const handoffContent = `# Handoff: ${metadata.name || projectSlug}

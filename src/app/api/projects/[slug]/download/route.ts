@@ -167,13 +167,12 @@ Project: ${metadata.name}
       archive.finalize();
     });
   } catch (error) {
-    logger.error('Error creating download:', error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('Error creating download:', err);
     return NextResponse.json(
       {
         success: false,
-        error: `Failed to create download: ${
-          error instanceof Error ? error.message : String(error)
-        }`
+        error: `Failed to create download: ${err.message}`
       },
       { status: 500 }
     );

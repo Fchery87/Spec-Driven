@@ -52,11 +52,12 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    logger.error('Token verification error:', error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('Token verification error:', err);
     return NextResponse.json(
       {
         success: false,
-        message: `Verification failed: ${error instanceof Error ? error.message : String(error)}`
+        message: `Verification failed: ${err.message}`
       },
       { status: 500 }
     );

@@ -46,11 +46,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
-    logger.error('Registration error:', error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('Registration error:', err);
     return NextResponse.json(
       {
         success: false,
-        message: `Registration failed: ${error instanceof Error ? error.message : String(error)}`
+        message: `Registration failed: ${err.message}`
       },
       { status: 500 }
     );

@@ -79,7 +79,8 @@ All project dependencies have been reviewed and approved. The project is now cle
         await dbService.saveArtifact(project.id, 'DEPENDENCIES', 'approval.md', approvalContent);
       }
     } catch (dbError) {
-      logger.error('Warning: Failed to log artifact to database:', dbError);
+      const dbErr = dbError instanceof Error ? dbError : new Error(String(dbError));
+      logger.error('Warning: Failed to log artifact to database:', dbErr);
       // Don't fail the request if database logging fails
     }
 
@@ -92,7 +93,8 @@ All project dependencies have been reviewed and approved. The project is now cle
       }
     });
   } catch (error) {
-    logger.error('Error approving dependencies:', error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('Error approving dependencies:', err);
     return NextResponse.json(
       { success: false, error: 'Failed to approve dependencies' },
       { status: 500 }

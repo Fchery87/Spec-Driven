@@ -95,7 +95,8 @@ export async function POST(
       { status: 400 }
     );
   } catch (error) {
-    logger.error('Error managing phase:', error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('Error managing phase:', err);
     return NextResponse.json(
       { success: false, error: 'Failed to manage phase' },
       { status: 500 }

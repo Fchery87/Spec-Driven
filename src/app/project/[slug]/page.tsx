@@ -99,7 +99,7 @@ export default function ProjectPage() {
     } catch (err) {
       setError('Failed to fetch project');
       const error = err instanceof Error ? err : new Error(String(err));
-      logger.error(error);
+      logger.error('Failed to fetch project:', error);
     } finally {
       setLoading(false);
     }
@@ -154,7 +154,7 @@ export default function ProjectPage() {
     } catch (err) {
       setError('Failed to execute phase');
       const error = err instanceof Error ? err : new Error(String(err));
-      logger.error(error);
+      logger.error('Failed to execute phase:', error);
       recordAction('Failed to execute phase', 'error');
     } finally {
       setExecuting(false);
@@ -184,7 +184,7 @@ export default function ProjectPage() {
     } catch (err) {
       setError('Failed to advance phase');
       const error = err instanceof Error ? err : new Error(String(err));
-      logger.error(error);
+      logger.error('Failed to advance phase:', error);
       recordAction('Failed to advance phase', 'error');
     } finally {
       setAdvancing(false);
@@ -213,7 +213,7 @@ export default function ProjectPage() {
     } catch (err) {
       setError('Failed to approve stack');
       const error = err instanceof Error ? err : new Error(String(err));
-      logger.error(error);
+      logger.error('Failed to approve stack:', error);
       recordAction('Failed to approve stack', 'error');
     }
   };
@@ -281,7 +281,7 @@ ${notes || 'N/A'}
     } catch (err) {
       setError('Failed to approve dependencies')
       const error = err instanceof Error ? err : new Error(String(err));
-      logger.error(error)
+      logger.error('Failed to approve dependencies:', error);
       recordAction('Failed to approve dependencies', 'error')
     } finally {
       setApprovingDependencies(false)
@@ -361,7 +361,7 @@ ${notes || 'N/A'}
     } catch (err) {
       setError('Failed to generate handoff');
       const error = err instanceof Error ? err : new Error(String(err));
-      logger.error(error);
+      logger.error('Failed to generate handoff:', error);
       recordAction('Failed to generate handoff', 'error');
     } finally {
       setGeneratingHandoff(false);
@@ -391,7 +391,7 @@ ${notes || 'N/A'}
     } catch (err) {
       setError('Failed to download specifications');
       const error = err instanceof Error ? err : new Error(String(err));
-      logger.error(error);
+      logger.error('Failed to download specifications:', error);
       recordAction('Failed to download specifications', 'error');
     }
   };
@@ -417,7 +417,7 @@ ${notes || 'N/A'}
     } catch (err) {
       setError('Failed to delete project');
       const error = err instanceof Error ? err : new Error(String(err));
-      logger.error(error);
+      logger.error('Failed to delete project:', error);
       setShowDeleteDialog(false);
     } finally {
       setDeleting(false);
