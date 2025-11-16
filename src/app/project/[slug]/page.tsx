@@ -189,19 +189,42 @@ export default function ProjectPage() {
     }
   };
 
-  const handleViewArtifact = (artifact: any, phase: string) => {
-    setSelectedArtifact({
-      filename: artifact.name,
-      content: artifact.content,
-      phase: phase
-    });
-    setViewerOpen(true);
+  const handleViewArtifact = async (artifact: any, phase: string) => {
+    try {
+      // Fetch the actual artifact content from the file system
+      const response = await fetch(`/api/projects/${slug}/artifacts/${phase}/${artifact.name}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch artifact content');
+      }
+
+      const content = await response.text();
+
+      setSelectedArtifact({
+        filename: artifact.name,
+        content: content,
+        phase: phase
+      });
+      setViewerOpen(true);
+    } catch (err) {
+      console.error('Failed to fetch artifact:', err);
+      recordAction('Failed to load artifact', 'error');
+    }
   };
 
-  const handleArtifactDownload = (artifact: any) => {
+  const handleArtifactDownload = async (artifact: any, phase: string) => {
     try {
+      // Fetch the actual artifact content from the file system
+      const response = await fetch(`/api/projects/${slug}/artifacts/${phase}/${artifact.name}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch artifact content');
+      }
+
+      const content = await response.text();
+
       const element = document.createElement('a');
-      const file = new Blob([artifact.content], { type: 'text/plain' });
+      const file = new Blob([content], { type: 'text/plain' });
       element.href = URL.createObjectURL(file);
       element.download = artifact.name;
       document.body.appendChild(element);
@@ -591,7 +614,7 @@ export default function ProjectPage() {
                                   size="sm"
                                   variant="outline"
                                   className="h-7 px-2 text-xs"
-                                  onClick={() => handleArtifactDownload(artifact)}
+                                  onClick={() => handleArtifactDownload(artifact, phase)}
                                 >
                                   Download
                                 </Button>
