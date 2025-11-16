@@ -65,17 +65,6 @@ export default function ProjectPage() {
 
   const dependencySelectorRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    fetchProject();
-    fetchArtifacts();
-  }, [fetchProject, fetchArtifacts]);
-
-  useEffect(() => {
-    if (showDependencySelector) {
-      dependencySelectorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [showDependencySelector]);
-
   const recordAction = (message: string, type: 'success' | 'error' = 'success') => {
     setLastAction(message);
     setLastActionType(type);
@@ -128,6 +117,17 @@ export default function ProjectPage() {
       console.error('Failed to fetch artifacts:', err);
     }
   }, [slug]);
+
+  useEffect(() => {
+    fetchProject();
+    fetchArtifacts();
+  }, [fetchProject, fetchArtifacts]);
+
+  useEffect(() => {
+    if (showDependencySelector) {
+      dependencySelectorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [showDependencySelector]);
 
   const handleExecutePhase = async () => {
     setExecuting(true);
