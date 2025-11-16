@@ -26,6 +26,12 @@ export class OrchestratorEngine {
 
   constructor() {
     this.spec = new ConfigLoader().loadSpec();
+    console.log('[OrchestratorEngine] Loaded spec:', {
+      hasPhases: !!this.spec?.phases,
+      phaseKeys: this.spec?.phases ? Object.keys(this.spec.phases) : [],
+      hasValidators: !!this.spec?.validators,
+      hasLlmConfig: !!this.spec?.llm_config
+    });
     this.validators = new Validators(this.spec.validators);
     this.artifactManager = new ArtifactManager();
 
