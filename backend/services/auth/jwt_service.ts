@@ -38,7 +38,7 @@ export class JWTService {
     return jwt.sign(payload, this.secret, {
       expiresIn: this.expiresIn,
       algorithm: 'HS256'
-    });
+    } as any);
   }
 
   /**
