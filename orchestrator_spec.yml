@@ -308,12 +308,33 @@ agents:
       ```
 
       Output format for api-spec.json:
-      ```json
+      ```
       filename: api-spec.json
+      ```json
       {
         "openapi": "3.0.0",
-        "info": { ... },
-        "paths": { ... }
+        "info": {
+          "title": "[Project Name] API",
+          "version": "1.0.0",
+          "description": "[Brief description]"
+        },
+        "paths": {
+          "/endpoint": {
+            "get": {
+              "summary": "[Description]",
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "content": {
+                    "application/json": {
+                      "schema": { }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
       ```
 
