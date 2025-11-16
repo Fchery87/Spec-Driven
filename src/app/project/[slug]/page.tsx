@@ -98,7 +98,8 @@ export default function ProjectPage() {
       }
     } catch (err) {
       setError('Failed to fetch project');
-      logger.error(err);
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.error(error);
     } finally {
       setLoading(false);
     }
@@ -115,7 +116,8 @@ export default function ProjectPage() {
         setArtifacts(allArtifacts);
       }
     } catch (err) {
-      logger.error('Failed to fetch artifacts:', err);
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.error('Failed to fetch artifacts:', error);
     }
   }, [slug]);
 
@@ -151,7 +153,8 @@ export default function ProjectPage() {
       }
     } catch (err) {
       setError('Failed to execute phase');
-      logger.error(err);
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.error(error);
       recordAction('Failed to execute phase', 'error');
     } finally {
       setExecuting(false);
@@ -180,7 +183,8 @@ export default function ProjectPage() {
       }
     } catch (err) {
       setError('Failed to advance phase');
-      logger.error(err);
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.error(error);
       recordAction('Failed to advance phase', 'error');
     } finally {
       setAdvancing(false);
@@ -208,7 +212,8 @@ export default function ProjectPage() {
       }
     } catch (err) {
       setError('Failed to approve stack');
-      logger.error(err);
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.error(error);
       recordAction('Failed to approve stack', 'error');
     }
   };
@@ -275,7 +280,8 @@ ${notes || 'N/A'}
       }
     } catch (err) {
       setError('Failed to approve dependencies')
-      logger.error(err)
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.error(error)
       recordAction('Failed to approve dependencies', 'error')
     } finally {
       setApprovingDependencies(false)
@@ -300,7 +306,8 @@ ${notes || 'N/A'}
       });
       setViewerOpen(true);
     } catch (err) {
-      logger.error('Failed to fetch artifact:', err);
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.error('Failed to fetch artifact:', error);
       recordAction('Failed to load artifact', 'error');
     }
   };
@@ -326,7 +333,8 @@ ${notes || 'N/A'}
       URL.revokeObjectURL(element.href);
       recordAction(`Downloaded ${artifact.name}.`);
     } catch (err) {
-      logger.error('Failed to download artifact:', err);
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.error('Failed to download artifact:', error);
       recordAction('Failed to download artifact', 'error');
     }
   };
@@ -352,7 +360,8 @@ ${notes || 'N/A'}
       }
     } catch (err) {
       setError('Failed to generate handoff');
-      logger.error(err);
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.error(error);
       recordAction('Failed to generate handoff', 'error');
     } finally {
       setGeneratingHandoff(false);
@@ -381,7 +390,8 @@ ${notes || 'N/A'}
       recordAction('Specifications downloaded.');
     } catch (err) {
       setError('Failed to download specifications');
-      logger.error(err);
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.error(error);
       recordAction('Failed to download specifications', 'error');
     }
   };
@@ -406,7 +416,8 @@ ${notes || 'N/A'}
       }
     } catch (err) {
       setError('Failed to delete project');
-      logger.error(err);
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.error(error);
       setShowDeleteDialog(false);
     } finally {
       setDeleting(false);

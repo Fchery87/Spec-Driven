@@ -80,7 +80,8 @@ export function withAuth(
     try {
       return await handler(request as AuthenticatedRequest, params);
     } catch (error) {
-      logger.error('Route error:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Route error:', err);
       return NextResponse.json(
         { success: false, message: 'Internal server error' },
         { status: 500 }
@@ -109,7 +110,8 @@ export function optionalAuth(
     try {
       return await handler(request as AuthenticatedRequest, params);
     } catch (error) {
-      logger.error('Route error:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Route error:', err);
       return NextResponse.json(
         { success: false, message: 'Internal server error' },
         { status: 500 }
