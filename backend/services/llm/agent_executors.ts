@@ -187,31 +187,58 @@ export class AgentExecutor {
    */
   private parseAgentOutput(content: string, expectedFiles: string[]): AgentOutput {
     const artifacts: Record<string, string> = {};
-    
-    // Try to extract files from markdown code blocks
+
+    // Try to extract files from markdown code blocks with explicit filename markers
     const fileRegex = /```(\w+)?\n?filename:\s*(.+?)\n([\s\S]*?)```/g;
     let match;
-    
+
     while ((match = fileRegex.exec(content)) !== null) {
       const [, language, filename, fileContent] = match;
-      artifacts[filename] = fileContent.trim();
+      artifacts[filename.trim()] = fileContent.trim();
     }
-    
-    // If no explicit filenames, try to split by file headers
+
+    // If some but not all files found, try to fill in missing ones from content headers
+    if (Object.keys(artifacts).length > 0 && Object.keys(artifacts).length < expectedFiles.length) {
+      for (const filename of expectedFiles) {
+        if (!artifacts[filename]) {
+          // Try to find this file by header
+          const fileHeader = new RegExp(`#?\\s*${filename.replace('.', '\\.')}`, 'i');
+          const parts = content.split(fileHeader);
+
+          if (parts.length > 1) {
+            let fileContent = parts[1];
+            // Find the next file header or end of content
+            for (const otherFile of expectedFiles) {
+              if (otherFile !== filename) {
+                const nextHeader = new RegExp(`#?\\s*${otherFile.replace('.', '\\.')}`, 'i');
+                const headerParts = fileContent.split(nextHeader);
+                if (headerParts.length > 1) {
+                  fileContent = headerParts[0];
+                  break;
+                }
+              }
+            }
+            artifacts[filename] = fileContent.trim();
+          }
+        }
+      }
+    }
+
+    // If no files extracted yet, try header-based parsing for all expected files
     if (Object.keys(artifacts).length === 0) {
       for (const filename of expectedFiles) {
         const fileHeader = new RegExp(`#?\\s*${filename.replace('.', '\\.')}`, 'i');
-        const match = content.split(fileHeader);
-        
-        if (match.length > 1) {
+        const parts = content.split(fileHeader);
+
+        if (parts.length > 1) {
+          let fileContent = parts[1];
           // Find the next file header or end of content
-          let fileContent = match[1];
           for (const otherFile of expectedFiles) {
             if (otherFile !== filename) {
               const nextHeader = new RegExp(`#?\\s*${otherFile.replace('.', '\\.')}`, 'i');
-              const parts = fileContent.split(nextHeader);
-              if (parts.length > 1) {
-                fileContent = parts[0];
+              const headerParts = fileContent.split(nextHeader);
+              if (headerParts.length > 1) {
+                fileContent = headerParts[0];
                 break;
               }
             }
@@ -220,12 +247,23 @@ export class AgentExecutor {
         }
       }
     }
-    
-    // Fallback: if still no artifacts, put everything in first expected file
+
+    // Fallback: if still no artifacts found, put entire content into first expected file
+    // This ensures at least one file is created
     if (Object.keys(artifacts).length === 0 && expectedFiles.length > 0) {
+      console.warn(`Failed to parse artifacts. Expected files: ${expectedFiles.join(', ')}`);
+      console.warn(`Putting entire response in first expected file: ${expectedFiles[0]}`);
       artifacts[expectedFiles[0]] = content;
     }
-    
+
+    // Ensure all expected files are present (fill in missing ones with empty strings for now)
+    for (const filename of expectedFiles) {
+      if (!artifacts[filename]) {
+        console.warn(`Missing expected artifact: ${filename}. Creating placeholder.`);
+        artifacts[filename] = '';
+      }
+    }
+
     return {
       artifacts,
       metadata: {
