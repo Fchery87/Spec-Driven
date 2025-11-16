@@ -167,6 +167,15 @@ export class OrchestratorEngine {
     artifacts: Record<string, string>;
     message: string;
   }> {
+    console.log('[OrchestratorEngine] runPhaseAgent called for phase:', project.current_phase);
+    console.log('[OrchestratorEngine] this.spec exists?', !!this.spec);
+    console.log('[OrchestratorEngine] this.spec.phases exists?', !!this.spec?.phases);
+
+    if (!this.spec || !this.spec.phases) {
+      console.error('[OrchestratorEngine] ERROR: spec or phases is undefined!');
+      throw new Error('OrchestratorEngine spec not properly initialized');
+    }
+
     const currentPhase = this.spec.phases[project.current_phase];
     if (!currentPhase) {
       throw new Error(`Unknown phase: ${project.current_phase}`);
