@@ -104,10 +104,10 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: `Project '${metadata.name}' has been successfully deleted`,
+      message: `Project '${metadata.name || slug}' has been successfully deleted`,
       data: {
         slug,
-        name: metadata.name
+        name: metadata.name || slug
       }
     });
   } catch (error) {
