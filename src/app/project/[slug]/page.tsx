@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +18,7 @@ import {
 import { PhaseStepper } from '@/components/orchestration/PhaseStepper';
 import { StackSelection } from '@/components/orchestration/StackSelection';
 import { ArtifactViewer } from '@/components/orchestration/ArtifactViewer';
+import { DependencySelector } from '@/components/orchestration/DependencySelector';
 import { calculatePhaseStatuses, canAdvanceFromPhase } from '@/utils/phase-status';
 import { ArrowLeft, FileText, CheckCircle, Trash2, Download } from 'lucide-react';
 
@@ -54,11 +55,20 @@ export default function ProjectPage() {
   const [generatingHandoff, setGeneratingHandoff] = useState(false);
   const [lastAction, setLastAction] = useState<string | null>(null);
   const [lastActionType, setLastActionType] = useState<'success' | 'error' | null>(null);
+  const [showDependencySelector, setShowDependencySelector] = useState(false);
+  const [approvingDependencies, setApprovingDependencies] = useState(false);
 
+  const dependencySelectorRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     fetchProject();
     fetchArtifacts();
   }, [slug]);
+
+  useEffect(() => {
+    if (showDependencySelector) {
+      dependencySelectorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [showDependencySelector]);
 
   const recordAction = (message: string, type: 'success' | 'error' = 'success') => {
     setLastAction(message);
@@ -79,6 +89,13 @@ export default function ProjectPage() {
         // Show stack selection if current phase is STACK_SELECTION and not approved
         if (result.data.current_phase === 'STACK_SELECTION' && !result.data.stack_approved) {
           setShowStackSelection(true);
+        } else {
+          setShowStackSelection(false);
+        }
+        if (result.data.current_phase === 'DEPENDENCIES' && !result.data.dependencies_approved) {
+          setShowDependencySelector(true);
+        } else {
+          setShowDependencySelector(false);
         }
       } else {
         setError(result.error || 'Failed to fetch project');
@@ -186,6 +203,67 @@ export default function ProjectPage() {
       setError('Failed to approve stack');
       console.error(err);
       recordAction('Failed to approve stack', 'error');
+    }
+  };
+
+  const handleDependenciesApprove = async ({
+    platform,
+    option,
+    notes,
+  }: {
+    platform: 'web' | 'mobile'
+    option: {
+      id: string
+      title: string
+      frontend: string
+      backend: string
+      database: string
+      deployment: string
+      dependencies: string[]
+    }
+    notes: string
+  }) => {
+    setApprovingDependencies(true)
+    try {
+      const approvalNotes = `
+Platform: ${platform.toUpperCase()}
+Selection: ${option.title}
+
+Frontend: ${option.frontend}
+Backend: ${option.backend}
+Database: ${option.database}
+Deployment: ${option.deployment}
+
+Dependencies:
+${option.dependencies.map((dep) => `- ${dep}`).join('\n')}
+
+Notes:
+${notes || 'N/A'}
+`.trim()
+
+      const response = await fetch(`/api/projects/${slug}/approve-dependencies`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approvalNotes }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        setShowDependencySelector(false)
+        await fetchProject()
+        await fetchArtifacts()
+        recordAction('Dependencies approved.')
+      } else {
+        setError(result.error || 'Failed to approve dependencies')
+        recordAction(result.error || 'Failed to approve dependencies', 'error')
+      }
+    } catch (err) {
+      setError('Failed to approve dependencies')
+      console.error(err)
+      recordAction('Failed to approve dependencies', 'error')
+    } finally {
+      setApprovingDependencies(false)
     }
   };
 
@@ -476,6 +554,10 @@ export default function ProjectPage() {
               );
 
               const canExecutePhase = shouldShowExecuteButton(project.current_phase, artifacts);
+              const hasCurrentArtifacts = hasArtifactsForPhase(project.current_phase, artifacts);
+              const executeLabel = hasCurrentArtifacts
+                ? `Rebuild ${project.current_phase} Phase`
+                : `Execute ${project.current_phase} Phase`;
 
               return (
                 <PhaseStepper
@@ -486,7 +568,7 @@ export default function ProjectPage() {
                   canExecute={canExecutePhase}
                   onExecute={handleExecutePhase}
                   executing={executing}
-                  executeLabel={`Execute ${project.current_phase} Phase`}
+                  executeLabel={executeLabel}
                 />
               );
             })()}
@@ -507,6 +589,23 @@ export default function ProjectPage() {
                 selectedStack={project.stack_choice || undefined}
                 onStackSelect={handleStackApprove}
               />
+            </CardContent>
+          </Card>
+        )}
+
+        {showDependencySelector && (
+          <Card
+            ref={dependencySelectorRef}
+            className="mb-8 border border-[hsl(var(--chart-3))]/30 bg-[hsl(var(--chart-3))]/5"
+          >
+            <CardHeader>
+              <CardTitle>Dependencies Blueprint</CardTitle>
+              <CardDescription>
+                Select the platform profile and dependency stack that DevOps should provision for this project.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DependencySelector submitting={approvingDependencies} onApprove={handleDependenciesApprove} />
             </CardContent>
           </Card>
         )}
@@ -656,6 +755,16 @@ export default function ProjectPage() {
                 >
                   {advancing ? 'Advancing...' : 'Advance to Next Phase'}
                 </Button>
+                {project.current_phase === 'DEPENDENCIES' && !project.dependencies_approved && (
+                  <Button
+                    variant="secondary"
+                    className="flex-1 min-w-[180px]"
+                    onClick={() => setShowDependencySelector(true)}
+                    disabled={executing || advancing || showDependencySelector}
+                  >
+                    Select Dependencies
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   className="flex-1 min-w-[140px]"
@@ -825,11 +934,16 @@ function shouldShowExecuteButton(phase: string, artifacts: Record<string, any>):
     return false;
   }
 
-  // Check if current phase has artifacts
-  const currentPhaseArtifacts = artifacts[phase] || [];
+  // All other phases can be executed (or rebuilt) at any time
+  return true;
+}
 
-  // Show execute button if no artifacts exist for this phase
-  return currentPhaseArtifacts.length === 0;
+function hasArtifactsForPhase(phase: string, artifacts: Record<string, any>): boolean {
+  if (phase === 'STACK_SELECTION' || phase === 'DONE') {
+    return false;
+  }
+  const phaseArtifacts = artifacts[phase] || [];
+  return phaseArtifacts.length > 0;
 }
 
 function getPhaseDescription(phase: string): string {
