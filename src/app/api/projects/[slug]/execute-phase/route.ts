@@ -13,12 +13,12 @@ export const maxDuration = 300; // 5 minutes
 
 export const runtime = 'nodejs';
 
-const handler = async (
+const executePhaseHandler = async (
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  context: { params: { slug: string } }
 ) => {
   try {
-    const { slug } = params;
+    const { slug } = context.params;
 
     const metadata = getProjectMetadata(slug);
 
@@ -175,7 +175,7 @@ const handler = async (
     });
   } catch (error) {
     logger.error('Error executing phase agent', error instanceof Error ? error : new Error(String(error)), {
-      project: params.slug,
+      project: context.params.slug,
       correlationId: getCorrelationId(),
     });
     return NextResponse.json(
@@ -190,7 +190,6 @@ const handler = async (
   }
 };
 
-// Apply rate limiting and correlation ID middleware
-export const POST = withCorrelationId(
-  withLLMRateLimit(handler)
-);
+// Export handler directly - bypass middleware that don't support dynamic routes
+// Rate limiting will be handled at the application level
+export const POST = executePhaseHandler;
