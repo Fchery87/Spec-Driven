@@ -61,14 +61,14 @@ export class OrchestratorEngine {
 
     // Initialize Gemini client with LLM config from orchestrator spec
     const llmConfig = {
-      provider: this.spec.llm_config.provider,
-      model: this.spec.llm_config.model,
-      max_tokens: this.spec.llm_config.max_tokens,
-      temperature: this.spec.llm_config.temperature,
-      timeout_seconds: this.spec.llm_config.timeout_seconds,
+      provider: this.spec.llm_config.provider as string,
+      model: this.spec.llm_config.model as string,
+      max_tokens: this.spec.llm_config.max_tokens as number,
+      temperature: this.spec.llm_config.temperature as number,
+      timeout_seconds: this.spec.llm_config.timeout_seconds as number,
       api_key: process.env.GEMINI_API_KEY
     };
-    this.llmClient = new GeminiClient(llmConfig);
+    this.llmClient = new GeminiClient(llmConfig as any);
   }
 
   /**

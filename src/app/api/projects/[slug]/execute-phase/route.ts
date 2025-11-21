@@ -105,7 +105,7 @@ const executePhaseHandler = async (
       }
     };
 
-    const result = await orchestrator.runPhaseAgent(project, previousArtifacts);
+    const result = await orchestrator.runPhaseAgent(project as any, previousArtifacts);
 
     if (!result.success) {
       // Record phase execution failure in database

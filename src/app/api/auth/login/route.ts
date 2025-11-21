@@ -41,7 +41,7 @@ async function loginHandler(request: NextRequest) {
   const validated = validateInput(LoginSchema, sanitized, 'login request');
 
   // Perform login
-  const result = await authService.login(validated);
+  const result = await authService.login(validated as { email: string; password: string });
 
   if (!result.success) {
     return NextResponse.json(result, { status: 401 });

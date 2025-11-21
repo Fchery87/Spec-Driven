@@ -45,7 +45,7 @@ export async function GET(
         }
       });
     } catch (fileErr) {
-      logger.error(`Failed to read artifact file ${name}:`, fileErr);
+      logger.error(`Failed to read artifact file ${name}:`, fileErr instanceof Error ? fileErr : new Error(String(fileErr)));
       return NextResponse.json(
         { success: false, error: 'Artifact not found' },
         { status: 404 }
