@@ -204,7 +204,13 @@ export class OrchestratorEngine {
       throw new Error('OrchestratorEngine spec not properly initialized');
     }
 
-    const currentPhase = this.spec.phases[project.current_phase];
+    // Store references to instance properties BEFORE async operations
+    // This prevents context loss in Next.js RSC environment after awaits
+    const spec = this.spec;
+    const llmClient = this.llmClient;
+    const artifactManager = this.artifactManager;
+
+    const currentPhase = spec.phases[project.current_phase];
     if (!currentPhase) {
       throw new Error(`Unknown phase: ${project.current_phase}`);
     }
@@ -218,7 +224,7 @@ export class OrchestratorEngine {
       switch (project.current_phase) {
         case 'ANALYSIS':
           generatedArtifacts = await getAnalystExecutor(
-            this.llmClient,
+            llmClient,
             project.id,
             artifacts
           );
@@ -228,7 +234,7 @@ export class OrchestratorEngine {
           // SPEC phase has two owners: PM (generates PRD) and Architect (generates data-model and api-spec)
           // First generate PRD with PM
           const prdArtifacts = await getPMExecutor(
-            this.llmClient,
+            llmClient,
             project.id,
             artifacts,
             project.stack_choice
@@ -241,7 +247,8 @@ export class OrchestratorEngine {
             'SPEC/PRD.md': prdArtifacts['PRD.md'] || ''
           };
 
-          const architectArtifacts = await this.runArchitectForSpec(
+          const architectArtifacts = await getArchitectExecutor(
+            llmClient,
             project.id,
             artifactsWithPRD
           );
@@ -255,8 +262,8 @@ export class OrchestratorEngine {
 
         case 'SOLUTIONING':
           generatedArtifacts = await Promise.all([
-            getArchitectExecutor(this.llmClient, project.id, artifacts),
-            getScruMasterExecutor(this.llmClient, project.id, artifacts)
+            getArchitectExecutor(llmClient, project.id, artifacts),
+            getScruMasterExecutor(llmClient, project.id, artifacts)
           ]).then(([arch, scrum]) => ({
             ...arch,
             ...scrum
@@ -265,7 +272,7 @@ export class OrchestratorEngine {
 
         case 'DEPENDENCIES':
           generatedArtifacts = await getDevOpsExecutor(
-            this.llmClient,
+            llmClient,
             project.id,
             artifacts,
             project.stack_choice
@@ -294,7 +301,7 @@ export class OrchestratorEngine {
 
       // Save artifacts to storage
       for (const [filename, content] of Object.entries(generatedArtifacts)) {
-        await this.artifactManager.saveArtifact(
+        await artifactManager.saveArtifact(
           project.id,
           project.current_phase,
           filename,
@@ -324,20 +331,6 @@ export class OrchestratorEngine {
     }
   }
 
-  /**
-   * Run Architect agent specifically for SPEC phase (data model + API spec)
-   */
-  private async runArchitectForSpec(
-    projectId: string,
-    artifacts: Record<string, string>
-  ): Promise<Record<string, string>> {
-    // Use the getArchitectExecutor wrapper function which properly handles the agent
-    return await getArchitectExecutor(
-      this.llmClient,
-      projectId,
-      artifacts
-    );
-  }
 
   /**
    * Validate artifacts for a phase
