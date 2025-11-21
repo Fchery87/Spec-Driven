@@ -1,5 +1,5 @@
 import { ProjectDBService } from '@/backend/services/database/drizzle_project_db_service';
-import { Project, Artifact, PhaseHistory } from '@/backend/lib/schema';
+import { Project, PhaseHistory } from '@/backend/lib/schema';
 import { logger } from './logger';
 
 /**
@@ -137,8 +137,7 @@ export async function saveArtifact(
   projectId: string,
   phase: string,
   filename: string,
-  content: string,
-  version: number = 1
+  content: string
 ): Promise<void> {
   await dbService.saveArtifact(projectId, phase, filename, content);
 }
@@ -178,7 +177,6 @@ export async function listArtifacts(
 export async function recordPhaseCompletion(
   projectId: string,
   phase: string,
-  durationMs: number = 0,
   errorMessage?: string
 ): Promise<void> {
   const status = errorMessage ? 'failed' : 'completed';

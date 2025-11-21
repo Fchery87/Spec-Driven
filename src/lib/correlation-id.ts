@@ -3,6 +3,7 @@
  * Allows tracking related operations across services and logs
  */
 
+import { NextRequest } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 
 const CORRELATION_ID_HEADER = 'x-correlation-id';
@@ -40,8 +41,8 @@ export function getRequestId(): string {
 /**
  * Middleware to inject correlation IDs into response headers
  */
-export function withCorrelationId(handler: (req: Request) => Promise<Response>) {
-  return async (req: Request): Promise<Response> => {
+export function withCorrelationId<T extends Request | NextRequest = Request>(handler: (req: T) => Promise<Response>) {
+  return async (req: T): Promise<Response> => {
     const correlationId = req.headers.get(CORRELATION_ID_HEADER) || uuidv4();
     const requestId = uuidv4();
 

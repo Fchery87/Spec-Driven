@@ -4,7 +4,8 @@ export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
 // Import auth with proper error handling
-let authInstance: any
+type AuthInstance = typeof import("@/lib/auth")["auth"]
+let authInstance: AuthInstance | null = null
 
 async function getAuth() {
   if (!authInstance) {

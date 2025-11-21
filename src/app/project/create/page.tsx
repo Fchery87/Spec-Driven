@@ -45,7 +45,7 @@ export default function CreateProject() {
       }
     } catch (err) {
       setError('Failed to create project');
-      logger.error(err);
+      logger.error('Failed to create project', err instanceof Error ? err : new Error(String(err)));
     } finally {
       setLoading(false);
     }

@@ -75,7 +75,7 @@ export function calculatePhaseStatuses(progress: ProjectProgress): Phase[] {
 
     if (gateInfo && !isCompleted) {
       const gateField = gateInfo.field as keyof ProjectProgress
-      const gateApproved = (progress as Record<string, unknown>)[gateField] === true
+      const gateApproved = Boolean((progress as unknown as Record<string, unknown>)[gateField])
 
       // Phase is blocked if it's the current phase and the gate hasn't been approved
       if (isCurrent && !gateApproved) {

@@ -102,7 +102,7 @@ export function sanitizeEmail(email: string): string {
   return email
     .toLowerCase()
     .trim()
-    .replace(/[<>()[\]\\,;:\s@"]/g, '') // Remove invalid characters
+    .replace(/[<>()[\]\\,;:\s"]/g, '') // Remove invalid characters but keep @
     .substring(0, 254); // RFC 5321
 }
 
@@ -149,7 +149,7 @@ export function sanitizeJSON(obj: any): any {
       return obj.map(item => sanitizeJSON(item));
     }
 
-    const sanitized: Record<string, any> = {};
+    const sanitized: Record<string, any> = Object.create(null);
     for (const [key, value] of Object.entries(obj)) {
       // Skip keys that might be injection vectors
       if (key.includes('__proto__') || key.includes('constructor')) {

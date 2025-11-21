@@ -5,8 +5,7 @@ import { ProjectDBService } from '@/backend/services/database/drizzle_project_db
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { logger } from '@/lib/logger';
-import { withCorrelationId, getCorrelationId } from '@/lib/correlation-id';
-import { withLLMRateLimit } from '@/app/api/middleware/rate-limit';
+import { getCorrelationId } from '@/lib/correlation-id';
 
 // Increase timeout for LLM operations (in seconds)
 export const maxDuration = 300; // 5 minutes
@@ -92,20 +91,27 @@ const executePhaseHandler = async (
       id: slug,
       slug,
       name: metadata.name,
+      description: metadata.description || '',
+      created_by_id: metadata.created_by_id || '',
       current_phase: metadata.current_phase,
-      phases_completed: metadata.phases_completed || [],
+      phases_completed: Array.isArray(metadata.phases_completed)
+        ? metadata.phases_completed
+        : (metadata.phases_completed ? String(metadata.phases_completed).split(',').filter(Boolean) : []),
       stack_choice: metadata.stack_choice,
       stack_approved: metadata.stack_approved || false,
+      stack_approval_date: metadata.stack_approval_date ? new Date(metadata.stack_approval_date) : undefined,
       dependencies_approved: metadata.dependencies_approved || false,
-      created_at: metadata.created_at,
-      updated_at: metadata.updated_at,
+      dependencies_approval_date: metadata.dependencies_approval_date ? new Date(metadata.dependencies_approval_date) : undefined,
+      created_at: metadata.created_at ? new Date(metadata.created_at) : new Date(),
+      updated_at: metadata.updated_at ? new Date(metadata.updated_at) : new Date(),
+      project_path: resolve(process.cwd(), 'projects', slug),
       orchestration_state: metadata.orchestration_state || {
         artifact_versions: {},
         phase_history: []
       }
-    };
+    } satisfies Parameters<OrchestratorEngine['runPhaseAgent']>[0];
 
-    const result = await orchestrator.runPhaseAgent(project as any, previousArtifacts);
+    const result = await orchestrator.runPhaseAgent(project, previousArtifacts);
 
     if (!result.success) {
       // Record phase execution failure in database

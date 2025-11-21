@@ -59,7 +59,7 @@ export class ProjectsService {
       created_by_id: request.created_by_id,
       current_phase: 'ANALYSIS',
       phases_completed: [],
-      stack_choice: null,
+      stack_choice: undefined,
       stack_approved: false,
       dependencies_approved: false,
       orchestration_state: {
@@ -104,7 +104,7 @@ export class ProjectsService {
       created_by_id: metadata.created_by_id || '',
       current_phase: metadata.current_phase || 'ANALYSIS',
       phases_completed: metadata.phases_completed || [],
-      stack_choice: metadata.stack_choice || null,
+      stack_choice: metadata.stack_choice || undefined,
       stack_approved: metadata.stack_approved || false,
       stack_approval_date: metadata.stack_approval_date ? new Date(metadata.stack_approval_date) : undefined,
       dependencies_approved: metadata.dependencies_approved || false,
@@ -343,7 +343,7 @@ export class ProjectsService {
     };
 
     // In a real implementation, this would save to a database
-    logger.info('Phase history recorded:', history);
+    logger.info('Phase history recorded', { history });
   }
 
   /**

@@ -631,13 +631,23 @@ export class Validators {
           .map(id => id.trim())
           .filter(id => id.match(/^[T\w-]+$/));
 
-        if (depIds.length > 0) {
-          dependencies[taskId] = depIds;
-        } else {
-          dependencies[taskId] = [];
-        }
+        dependencies[taskId] = depIds;
       } else {
         dependencies[taskId] = [];
+      }
+    }
+
+    // Fallback parser for simple "## Task" blocks with depends_on: [Task A]
+    if (Object.keys(dependencies).length === 0) {
+      const simpleTaskRegex = /##\s*(.+?)\s*\n[\s\S]*?-+\s*depends_on:\s*\[([^\]]*)\]/gi;
+      let simpleMatch;
+      while ((simpleMatch = simpleTaskRegex.exec(tasksContent)) !== null) {
+        const taskName = simpleMatch[1].trim();
+        const deps = simpleMatch[2]
+          .split(',')
+          .map(dep => dep.replace(/[\[\]]/g, '').trim())
+          .filter(Boolean);
+        dependencies[taskName] = deps;
       }
     }
 
@@ -924,7 +934,7 @@ export class Validators {
 
     if (validator.type === 'SPEC') {
       const prdContent = artifacts['PRD.md'] || '';
-      const reqMatches = prdContent.match(/REQ-\w+-\d+/g) || [];
+      const reqMatches = prdContent.match(/REQ-[A-Z0-9_-]+/gi) || [];
 
       if (reqMatches.length < 5) {
         errors.push(`PRD.md has only ${reqMatches.length} requirements (min 5)`);

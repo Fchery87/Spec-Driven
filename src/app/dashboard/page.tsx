@@ -63,7 +63,7 @@ export default function Dashboard() {
       }
     } catch (err) {
       setError('Failed to fetch projects');
-      logger.error(err);
+      logger.error('Failed to fetch projects', err instanceof Error ? err : new Error(String(err)));
     } finally {
       setLoading(false);
     }
@@ -105,7 +105,7 @@ export default function Dashboard() {
       }
     } catch (err) {
       setError('Failed to delete project');
-      logger.error(err);
+      logger.error('Failed to delete project', err instanceof Error ? err : new Error(String(err)));
     } finally {
       setDeleting(false);
     }

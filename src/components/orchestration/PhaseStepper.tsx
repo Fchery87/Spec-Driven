@@ -145,15 +145,15 @@ export function PhaseStepper({
 
       {/* Phase Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {phases.map((phase, index) => (
+        {phases.map((phase) => (
           <Card 
             key={phase.name}
             className={`
               cursor-pointer transition-all hover:shadow-md
               ${getPhaseColor(phase.status)}
-              ${isPhaseClickable(phase, index) ? 'hover:scale-105' : 'opacity-75'}
+              ${isPhaseClickable(phase) ? 'hover:scale-105' : 'opacity-75'}
             `}
-            onClick={() => isPhaseClickable(phase, index) && onPhaseClick?.(phase.name)}
+            onClick={() => isPhaseClickable(phase) && onPhaseClick?.(phase.name)}
           >
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">

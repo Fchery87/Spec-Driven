@@ -579,7 +579,7 @@ ${notes || 'N/A'}
                 project.dependencies_approved
               );
 
-              const canExecutePhase = shouldShowExecuteButton(project.current_phase, artifacts);
+              const canExecutePhase = shouldShowExecuteButton(project.current_phase);
               const hasCurrentArtifacts = hasArtifactsForPhase(project.current_phase, artifacts);
               const executeLabel = hasCurrentArtifacts
                 ? `Rebuild ${project.current_phase} Phase`
