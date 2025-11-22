@@ -11,12 +11,14 @@ vi.mock('@/app/api/lib/project-utils');
 vi.mock('@/lib/logger');
 vi.mock('@/lib/rate-limiter');
 vi.mock('@/lib/correlation-id');
+vi.mock('@/app/api/middleware/auth-guard');
 
 import { ProjectDBService } from '@/backend/services/database/drizzle_project_db_service';
 import { ProjectStorage } from '@/backend/services/file_system/project_storage';
 import * as projectUtils from '@/app/api/lib/project-utils';
 import { generalLimiter, getRateLimitKey, createRateLimitResponse } from '@/lib/rate-limiter';
 import { withCorrelationId } from '@/lib/correlation-id';
+import { withAuth } from '@/app/api/middleware/auth-guard';
 
 describe('Projects API Routes', () => {
   const mockProjectData = {
@@ -48,12 +50,34 @@ describe('Projects API Routes', () => {
     orchestration_state: {}
   };
 
+  const mockSession = {
+    user: {
+      id: 'test-user-123',
+      email: 'test@example.com',
+      emailVerified: true,
+      name: 'Test User',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    session: {
+      id: 'test-session-123',
+      token: 'test-token',
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     // Default mock implementations
     (getRateLimitKey as any).mockReturnValue('test-key');
     (generalLimiter.isAllowed as any).mockResolvedValue(true);
     (withCorrelationId as any).mockImplementation((fn: (req: NextRequest) => Promise<Response>) => fn);
+    (withAuth as any).mockImplementation(
+      (handler: (req: NextRequest, context: any, session: any) => Promise<Response>) =>
+        async (req: NextRequest, context?: any) => handler(req, context, mockSession)
+    );
   });
 
   describe('GET /api/projects - List all projects', () => {
@@ -146,7 +170,7 @@ describe('Projects API Routes', () => {
         })
       });
 
-      const response = await createProject(request);
+      const response = await createProject(request, {});
       const json = await response.json();
 
       expect(response.status).toBe(201);
@@ -163,7 +187,7 @@ describe('Projects API Routes', () => {
         })
       });
 
-      const response = await createProject(request);
+      const response = await createProject(request, {});
       const json = await response.json();
 
       expect(response.status).toBe(400);
@@ -187,7 +211,7 @@ describe('Projects API Routes', () => {
         })
       });
 
-      const response = await createProject(request);
+      const response = await createProject(request, {});
       const json = await response.json();
 
       expect(response.status).toBe(201);
@@ -208,7 +232,7 @@ describe('Projects API Routes', () => {
         })
       });
 
-      await createProject(request);
+      await createProject(request, {});
 
       expect(createDirSpy).toHaveBeenCalled();
     });
@@ -226,7 +250,7 @@ describe('Projects API Routes', () => {
         })
       });
 
-      await createProject(request);
+      await createProject(request, {});
 
       expect(saveMetadataSpy).toHaveBeenCalled();
     });
@@ -243,7 +267,7 @@ describe('Projects API Routes', () => {
         })
       });
 
-      const response = await createProject(request);
+      const response = await createProject(request, {});
       const json = await response.json();
 
       expect(response.status).toBe(500);
@@ -265,7 +289,7 @@ describe('Projects API Routes', () => {
         })
       });
 
-      const response = await createProject(request);
+      const response = await createProject(request, {});
 
       expect(response.status).toBe(429);
     });

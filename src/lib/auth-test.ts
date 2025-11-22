@@ -2,7 +2,6 @@
 // This file is just for verification and doesn't need to pass TypeScript checks during development
 
 import { auth } from '@/lib/auth';
-// @ts-expect-error db supports both SQLite and Postgres dynamically
 import { db } from '@/backend/lib/drizzle';
 import { users } from '@/backend/lib/schema';
 

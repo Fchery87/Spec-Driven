@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 import { useLogger } from "@/lib/logger"
 
 import { SiteLogo } from "./SiteLogo"
+import { ThemeToggle } from "./ThemeToggle"
 
 const navLinks = [
   { label: "Overview", href: "/" },
@@ -69,6 +70,7 @@ export function SiteHeader({ className }: SiteHeaderProps) {
         </nav>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           {isPending ? (
             <div className="h-9 w-28 animate-pulse rounded-md bg-muted" aria-hidden="true" />
           ) : isAuthenticated ? (

@@ -2,7 +2,6 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { randomUUID } from "crypto";
 
-// @ts-expect-error db supports both SQLite and Postgres dynamically
 import { db } from "@/backend/lib/drizzle";
 import { logger } from "@/lib/logger";
 import * as schema from "@/backend/lib/schema";

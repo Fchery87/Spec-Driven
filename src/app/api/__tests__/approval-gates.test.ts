@@ -8,10 +8,12 @@ vi.mock('@/backend/services/database/drizzle_project_db_service');
 vi.mock('@/app/api/lib/project-utils');
 vi.mock('@/lib/logger');
 vi.mock('@/backend/services/orchestrator/orchestrator_engine');
+vi.mock('@/app/api/middleware/auth-guard');
 
 import { ProjectDBService } from '@/backend/services/database/drizzle_project_db_service';
 import * as projectUtils from '@/app/api/lib/project-utils';
 import { OrchestratorEngine } from '@/backend/services/orchestrator/orchestrator_engine';
+import { withAuth } from '@/app/api/middleware/auth-guard';
 
 describe('Approval Gates and Phase Execution', () => {
   const mockMetadata = {
@@ -43,8 +45,30 @@ describe('Approval Gates and Phase Execution', () => {
     updatedAt: new Date('2025-01-01')
   };
 
+  const mockSession = {
+    user: {
+      id: 'test-user-123',
+      email: 'test@example.com',
+      emailVerified: true,
+      name: 'Test User',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    session: {
+      id: 'test-session-123',
+      token: 'test-token',
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
+    (withAuth as any).mockImplementation(
+      (handler: (req: NextRequest, context: any, session: any) => Promise<Response>) =>
+        async (req: NextRequest, context?: any) => handler(req, context, mockSession)
+    );
   });
 
   describe('POST /api/projects/[slug]/approve-dependencies', () => {

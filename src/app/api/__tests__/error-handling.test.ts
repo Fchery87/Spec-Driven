@@ -9,6 +9,7 @@ vi.mock('@/app/api/lib/project-utils');
 vi.mock('@/lib/logger');
 vi.mock('@/lib/rate-limiter');
 vi.mock('@/lib/correlation-id');
+vi.mock('@/app/api/middleware/auth-guard');
 vi.mock('fs');
 
 import { ProjectDBService } from '@/backend/services/database/drizzle_project_db_service';
@@ -16,6 +17,7 @@ import * as projectUtils from '@/app/api/lib/project-utils';
 import { logger } from '@/lib/logger';
 import { generalLimiter, getRateLimitKey, createRateLimitResponse } from '@/lib/rate-limiter';
 import { withCorrelationId } from '@/lib/correlation-id';
+import { withAuth } from '@/app/api/middleware/auth-guard';
 
 describe('API Error Handling', () => {
   const mockMetadata = {
@@ -33,11 +35,33 @@ describe('API Error Handling', () => {
     orchestration_state: {}
   };
 
+  const mockSession = {
+    user: {
+      id: 'test-user-123',
+      email: 'test@example.com',
+      emailVerified: true,
+      name: 'Test User',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    session: {
+      id: 'test-session-123',
+      token: 'test-token',
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     (getRateLimitKey as any).mockReturnValue('test-key');
     (generalLimiter.isAllowed as any).mockResolvedValue(true);
     (withCorrelationId as any).mockImplementation((fn: (req: NextRequest) => Promise<Response>) => fn);
+    (withAuth as any).mockImplementation(
+      (handler: (req: NextRequest, context: any, session: any) => Promise<Response>) =>
+        async (req: NextRequest, context?: any) => handler(req, context, mockSession)
+    );
   });
 
   describe('Database Connection Errors', () => {
@@ -78,7 +102,7 @@ describe('API Error Handling', () => {
         body: JSON.stringify({ name: 'Test' })
       });
 
-      const response = await createProject(request);
+      const response = await createProject(request, {});
       const json = await response.json();
 
       expect(response.status).toBe(500);
@@ -93,7 +117,7 @@ describe('API Error Handling', () => {
         body: JSON.stringify({ name: '' })
       });
 
-      const response = await createProject(request);
+      const response = await createProject(request, {});
       const json = await response.json();
 
       expect(response.status).toBe(400);
@@ -106,7 +130,7 @@ describe('API Error Handling', () => {
         body: JSON.stringify({ name: null })
       });
 
-      const response = await createProject(request);
+      const response = await createProject(request, {});
       const json = await response.json();
 
       expect(response.status).toBe(400);
@@ -118,7 +142,7 @@ describe('API Error Handling', () => {
         body: '{}'
       });
 
-      const response = await createProject(request);
+      const response = await createProject(request, {});
       const json = await response.json();
 
       expect(response.status).toBe(400);
@@ -141,7 +165,7 @@ describe('API Error Handling', () => {
         body: JSON.stringify({ name: longName })
       });
 
-      const response = await createProject(request);
+      const response = await createProject(request, {});
 
       expect(response.status).toBe(201);
     });
@@ -162,7 +186,7 @@ describe('API Error Handling', () => {
         body: JSON.stringify({ name: specialName })
       });
 
-      const response = await createProject(request);
+      const response = await createProject(request, {});
 
       expect(response.status).toBe(201);
     });
@@ -229,7 +253,7 @@ describe('API Error Handling', () => {
         body: JSON.stringify({ name: 'Test' })
       });
 
-      const response = await createProject(request);
+      const response = await createProject(request, {});
       const json = await response.json();
 
       expect(response.status).toBe(500);
@@ -282,7 +306,7 @@ describe('API Error Handling', () => {
         body: JSON.stringify({ name: 'Test' })
       });
 
-      const response = await createProject(request);
+      const response = await createProject(request, {});
 
       expect(response.status).toBe(429);
     });
@@ -339,7 +363,7 @@ describe('API Error Handling', () => {
         createProject(new NextRequest(new URL('http://localhost:3000/api/projects'), {
           method: 'POST',
           body: JSON.stringify({ name: 'Test Project' })
-        }))
+        }), {})
       );
 
       const responses = await Promise.all(requests);
@@ -382,7 +406,7 @@ describe('API Error Handling', () => {
         }
       });
 
-      const response = await createProject(request);
+      const response = await createProject(request, {});
       // Should still process as JSON since we're calling request.json()
       expect([201, 400, 500]).toContain(response.status);
     });
@@ -425,7 +449,7 @@ describe('API Error Handling', () => {
         method: 'POST',
         body: JSON.stringify({ name: 'Test' })
       });
-      const postResponse = await createProject(postRequest);
+      const postResponse = await createProject(postRequest, {});
       expect(postResponse.status).toBe(201);
     });
 
@@ -460,7 +484,7 @@ describe('API Error Handling', () => {
         body: JSON.stringify({ name: injectionAttempt })
       });
 
-      const response = await createProject(request);
+      const response = await createProject(request, {});
       expect(response.status).toBe(201);
     });
 
@@ -480,7 +504,7 @@ describe('API Error Handling', () => {
         body: JSON.stringify({ name: injectionAttempt })
       });
 
-      const response = await createProject(request);
+      const response = await createProject(request, {});
       expect(response.status).toBe(201);
     });
   });

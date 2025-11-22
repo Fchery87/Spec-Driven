@@ -165,7 +165,7 @@ export async function listArtifacts(
   phase: string
 ): Promise<Array<{ filename: string; version: number; createdAt: Date }>> {
   const artifacts = await dbService.getArtifactsByPhase(projectId, phase);
-  return artifacts.map(a => ({
+  return artifacts.map((a: any) => ({
     filename: a.filename,
     version: a.version,
     createdAt: a.createdAt,
