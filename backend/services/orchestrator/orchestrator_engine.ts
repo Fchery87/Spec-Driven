@@ -326,11 +326,18 @@ export class OrchestratorEngine {
         normalizedArtifacts[key] = content;
       }
 
-      // Update artifact versions
-      if (!orchestrationState.artifact_versions[currentPhaseName]) {
-        orchestrationState.artifact_versions[currentPhaseName] = 1;
+      // Reload orchestrationState from database to prevent context loss after long async operations
+      const updatedProject = await this.projectService.getProject(projectId);
+      if (!updatedProject || !updatedProject.orchestration_state) {
+        throw new Error(`[CRITICAL] Failed to reload project orchestration_state after artifact generation`);
+      }
+      const freshOrchestrationState = updatedProject.orchestration_state;
+
+      // Update artifact versions with fresh orchestration state
+      if (!freshOrchestrationState.artifact_versions[currentPhaseName]) {
+        freshOrchestrationState.artifact_versions[currentPhaseName] = 1;
       } else {
-        orchestrationState.artifact_versions[currentPhaseName]++;
+        freshOrchestrationState.artifact_versions[currentPhaseName]++;
       }
 
       return {
