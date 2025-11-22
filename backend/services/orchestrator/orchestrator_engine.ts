@@ -191,7 +191,13 @@ export class OrchestratorEngine {
     artifacts: Record<string, string>;
     message: string;
   }> {
-    logger.info('[OrchestratorEngine] runPhaseAgent called for phase: ' + project.current_phase);
+    // Capture ALL project properties locally FIRST to prevent context loss
+    const projectId = project.id;
+    const currentPhaseName = project.current_phase;
+    const stackChoice = project.stack_choice;
+    const orchestrationState = project.orchestration_state;
+
+    logger.info('[OrchestratorEngine] runPhaseAgent called for phase: ' + currentPhaseName);
 
     // Load a fresh spec each call to avoid any context loss between awaits
     // Store ALL references locally BEFORE any async operations to prevent Next.js RSC context loss
@@ -206,22 +212,22 @@ export class OrchestratorEngine {
     }
 
     const phases = spec.phases;
-    const currentPhase = phases[project.current_phase];
+    const currentPhase = phases[currentPhaseName];
     if (!currentPhase) {
-      throw new Error(`Unknown phase: ${project.current_phase}`);
+      throw new Error(`Unknown phase: ${currentPhaseName}`);
     }
 
     try {
-      logger.info(`Executing agent for phase: ${project.current_phase}`);
+      logger.info(`Executing agent for phase: ${currentPhaseName}`);
 
       let generatedArtifacts: Record<string, string> = {};
 
       // Get executor for current phase and run agent
-      switch (project.current_phase) {
+      switch (currentPhaseName) {
         case 'ANALYSIS':
           generatedArtifacts = await getAnalystExecutor(
             llmClient,
-            project.id,
+            projectId,
             artifacts
           );
           break;
@@ -231,9 +237,9 @@ export class OrchestratorEngine {
           // First generate PRD with PM
           const prdArtifacts = await getPMExecutor(
             llmClient,
-            project.id,
+            projectId,
             artifacts,
-            project.stack_choice
+            stackChoice
           );
 
           // Then generate data model and API spec with Architect
@@ -245,7 +251,7 @@ export class OrchestratorEngine {
 
           const architectArtifacts = await getArchitectExecutor(
             llmClient,
-            project.id,
+            projectId,
             artifactsWithPRD,
             'SPEC'
           );
@@ -259,8 +265,8 @@ export class OrchestratorEngine {
 
         case 'SOLUTIONING':
           generatedArtifacts = await Promise.all([
-            getArchitectExecutor(llmClient, project.id, artifacts),
-            getScruMasterExecutor(llmClient, project.id, artifacts)
+            getArchitectExecutor(llmClient, projectId, artifacts),
+            getScruMasterExecutor(llmClient, projectId, artifacts)
           ]).then(([arch, scrum]) => ({
             ...arch,
             ...scrum
@@ -270,9 +276,9 @@ export class OrchestratorEngine {
         case 'DEPENDENCIES':
           generatedArtifacts = await getDevOpsExecutor(
             llmClient,
-            project.id,
+            projectId,
             artifacts,
-            project.stack_choice
+            stackChoice
           );
           break;
 
@@ -293,39 +299,39 @@ export class OrchestratorEngine {
           };
 
         default:
-          throw new Error(`No executor for phase: ${project.current_phase}`);
+          throw new Error(`No executor for phase: ${currentPhaseName}`);
       }
 
       // Save artifacts to storage and normalize artifact keys with phase prefix
       const normalizedArtifacts: Record<string, string> = {};
       for (const [filename, content] of Object.entries(generatedArtifacts)) {
         await artifactManager.saveArtifact(
-          project.id,
-          project.current_phase,
+          projectId,
+          currentPhaseName,
           filename,
           content
         );
         // Normalize artifact keys to include phase prefix for downstream executors
-        const key = `${project.current_phase}/${filename}`;
+        const key = `${currentPhaseName}/${filename}`;
         normalizedArtifacts[key] = content;
       }
 
       // Update artifact versions
-      if (!project.orchestration_state.artifact_versions[project.current_phase]) {
-        project.orchestration_state.artifact_versions[project.current_phase] = 1;
+      if (!orchestrationState.artifact_versions[currentPhaseName]) {
+        orchestrationState.artifact_versions[currentPhaseName] = 1;
       } else {
-        project.orchestration_state.artifact_versions[project.current_phase]++;
+        orchestrationState.artifact_versions[currentPhaseName]++;
       }
 
       return {
         success: true,
         artifacts: normalizedArtifacts,
-        message: `Agent for phase ${project.current_phase} completed successfully`
+        message: `Agent for phase ${currentPhaseName} completed successfully`
       };
     } catch (error) {
       logger.error('Error running phase agent:', error instanceof Error ? error : new Error(String(error)));
       throw new Error(
-        `Failed to execute agent for phase ${project.current_phase}: ${
+        `Failed to execute agent for phase ${currentPhaseName}: ${
           error instanceof Error ? error.message : String(error)
         }`
       );
