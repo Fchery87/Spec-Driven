@@ -54,11 +54,11 @@ export async function acquireLock(options: LockOptions): Promise<LockHandle | nu
   try {
     // Try to acquire the lock with timeout
     // pg_try_advisory_lock returns true if lock acquired, false if already held
-    const result = await db.execute<{ success: boolean }>(
+    const result = await db.execute(
       sql`SELECT pg_try_advisory_lock(${id1}::int, ${id2}::int) as success`
     );
 
-    if (!result.rows[0]?.success) {
+    if (!(result.rows[0] as any)?.success) {
       logger.debug('Failed to acquire lock', { lockId, reason: 'already held' });
       return null;
     }
@@ -100,11 +100,11 @@ export async function releaseLock(lockId: string): Promise<boolean> {
 
   try {
     // pg_advisory_unlock returns true if lock was held, false otherwise
-    const result = await db.execute<{ success: boolean }>(
+    const result = await db.execute(
       sql`SELECT pg_advisory_unlock(${id1}::int, ${id2}::int) as success`
     );
 
-    if (result.rows[0]?.success) {
+    if ((result.rows[0] as any)?.success) {
       logger.info('Lock released', { lockId });
       return true;
     } else {
@@ -126,14 +126,14 @@ export async function isLockHeld(lockId: string): Promise<boolean> {
   try {
     // This query checks if the lock is held by any session
     // Note: This is database-wide, not session-specific
-    const result = await db.execute<{ count: string }>(
+    const result = await db.execute(
       sql`SELECT COUNT(*) as count FROM pg_locks
       WHERE locktype = 'advisory'
       AND database = (SELECT oid FROM pg_database WHERE datname = current_database())
       AND (classid = ${id1}::int OR classid = ${id2}::int)`
     );
 
-    return BigInt(result.rows[0]?.count || 0) > 0;
+    return BigInt((result.rows[0] as any)?.count || 0) > 0;
   } catch (error) {
     logger.error('Error checking lock status', error instanceof Error ? error : new Error(String(error)), { lockId });
     return false;
@@ -222,9 +222,9 @@ export async function withLockRetry<T>(
  */
 export async function initializeLocking(): Promise<boolean> {
   try {
-    const result = await db.execute<{ version: string }>(sql`SELECT version()`);
+    const result = await db.execute(sql`SELECT version()`);
     logger.info('Database initialized for advisory locking', {
-      version: result.rows[0]?.version.substring(0, 50) || 'unknown',
+      version: (result.rows[0] as any)?.version?.substring(0, 50) || 'unknown',
     });
     return true;
   } catch (error) {
