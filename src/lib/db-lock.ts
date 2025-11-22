@@ -9,6 +9,7 @@
  * - Perfect for coordinating across multiple instances
  */
 
+// @ts-expect-error db supports both SQLite and Postgres dynamically
 import { db } from '@/backend/lib/drizzle';
 import { sql } from 'drizzle-orm';
 import { logger } from './logger';

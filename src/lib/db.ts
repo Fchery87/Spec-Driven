@@ -152,7 +152,8 @@ export async function getArtifact(
   version: number = 1
 ): Promise<string | null> {
   const artifacts = await dbService.getArtifactsByPhase(projectId, phase);
-  const artifact = artifacts.find(a => a.filename === filename && a.version === version);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const artifact = artifacts.find((a: any) => a.filename === filename && a.version === version);
   return artifact?.content || null;
 }
 

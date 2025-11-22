@@ -129,7 +129,7 @@ export class ProjectDBService {
     if (!project) throw new Error('Project not found');
 
     const phasesCompleted = project.phasesCompleted
-      ? project.phasesCompleted.split(',').filter(p => p)
+      ? project.phasesCompleted.split(',').filter((p: string) => p)
       : [];
 
     if (!phasesCompleted.includes(project.currentPhase)) {
@@ -361,7 +361,7 @@ export class ProjectDBService {
     return {
       project_id: project.id,
       current_phase: project.currentPhase,
-      phases_completed: project.phasesCompleted.split(',').filter(p => p),
+      phases_completed: project.phasesCompleted.split(',').filter((p: string) => p),
       artifact_count: artifactCount,
       stack_approved: project.stackApproved,
       dependencies_approved: project.dependenciesApproved,

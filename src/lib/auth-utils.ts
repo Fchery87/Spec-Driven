@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm';
+// @ts-expect-error db supports both SQLite and Postgres dynamically
 import { db } from '@/backend/lib/drizzle';
 import { users } from '@/backend/lib/schema';
 
