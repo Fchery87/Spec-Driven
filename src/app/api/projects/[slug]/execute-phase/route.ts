@@ -6,27 +6,30 @@ import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { logger } from '@/lib/logger';
 import { getCorrelationId } from '@/lib/correlation-id';
+import { withAuth, type AuthSession } from '@/app/api/middleware/auth-guard';
 
 // Increase timeout for LLM operations (in seconds)
 export const maxDuration = 300; // 5 minutes
 
 export const runtime = 'nodejs';
 
-const executePhaseHandler = async (
-  request: NextRequest,
-  context: { params: { slug: string } }
-) => {
-  try {
-    const { slug } = context.params;
+const executePhaseHandler = withAuth(
+  async (
+    request: NextRequest,
+    context: { params: { slug: string } },
+    session: AuthSession
+  ) => {
+    try {
+      const { slug } = context.params;
 
-    const metadata = getProjectMetadata(slug);
+      const metadata = getProjectMetadata(slug);
 
-    if (!metadata) {
-      return NextResponse.json(
-        { success: false, error: 'Project not found' },
-        { status: 404 }
-      );
-    }
+      if (!metadata) {
+        return NextResponse.json(
+          { success: false, error: 'Project not found' },
+          { status: 404 }
+        );
+      }
 
     // Skip execution for user-driven phases
     if (metadata.current_phase === 'STACK_SELECTION') {
@@ -139,7 +142,46 @@ const executePhaseHandler = async (
       );
     }
 
-    // Update project metadata with new artifact versions
+    // DB-primary artifact persistence: save all artifacts to database
+    const dbService = new ProjectDBService();
+    const dbProject = await dbService.getProjectBySlug(slug);
+
+    if (dbProject) {
+      try {
+        // Persist all generated artifacts to database
+        for (const [key, content] of Object.entries(result.artifacts)) {
+          // Extract filename from key (e.g., "ANALYSIS/analysis_report.md" -> "analysis_report.md")
+          const filename = key.split('/').pop() || key;
+          await dbService.saveArtifact(
+            dbProject.id,
+            metadata.current_phase,
+            filename,
+            content
+          );
+        }
+
+        // Record phase execution success in database
+        await dbService.recordPhaseHistory(
+          dbProject.id,
+          metadata.current_phase,
+          'completed'
+        );
+
+        logger.info('Phase artifacts persisted to database', {
+          project: slug,
+          phase: metadata.current_phase,
+          artifactCount: Object.keys(result.artifacts).length,
+        });
+      } catch (dbError) {
+        logger.warn(`Failed to persist artifacts to database: ${dbError instanceof Error ? dbError.message : String(dbError)}`, {
+          project: slug,
+          phase: metadata.current_phase,
+        });
+        // Don't fail the request; artifacts are still in filesystem
+      }
+    }
+
+    // Update project metadata with new artifact versions and orchestration state
     const updated = {
       ...metadata,
       orchestration_state: project.orchestration_state,
@@ -148,27 +190,8 @@ const executePhaseHandler = async (
 
     saveProjectMetadata(slug, updated);
 
-    // Persist to database
+    // Persist metadata to database
     await persistProjectToDB(slug, updated);
-
-    // Record phase execution success in database
-    try {
-      const dbService = new ProjectDBService();
-      const dbProject = await dbService.getProjectBySlug(slug);
-      if (dbProject) {
-        await dbService.recordPhaseHistory(
-          dbProject.id,
-          metadata.current_phase,
-          'completed'
-        );
-      }
-    } catch (dbError) {
-      logger.warn(`Failed to record phase completion to database: ${dbError instanceof Error ? dbError.message : String(dbError)}`, {
-        project: slug,
-        phase: metadata.current_phase,
-      });
-      // Don't fail the request if database logging fails
-    }
 
     return NextResponse.json({
       success: true,
@@ -179,22 +202,23 @@ const executePhaseHandler = async (
         artifact_count: Object.keys(result.artifacts).length
       }
     });
-  } catch (error) {
-    logger.error('Error executing phase agent', error instanceof Error ? error : new Error(String(error)), {
-      project: context.params.slug,
-      correlationId: getCorrelationId(),
-    });
-    return NextResponse.json(
-      {
-        success: false,
-        error: `Failed to execute phase agent: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      },
-      { status: 500 }
-    );
+    } catch (error) {
+      logger.error('Error executing phase agent', error instanceof Error ? error : new Error(String(error)), {
+        project: context.params.slug,
+        correlationId: getCorrelationId(),
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Failed to execute phase agent: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        },
+        { status: 500 }
+      );
+    }
   }
-};
+);
 
 // Export handler directly - bypass middleware that don't support dynamic routes
 // Rate limiting will be handled at the application level

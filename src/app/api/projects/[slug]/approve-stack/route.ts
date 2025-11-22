@@ -2,48 +2,50 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getProjectMetadata, saveProjectMetadata, writeArtifact, persistProjectToDB } from '@/app/api/lib/project-utils';
 import { ProjectDBService } from '@/backend/services/database/drizzle_project_db_service';
 import { logger } from '@/lib/logger';
+import { withAuth, type AuthSession } from '@/app/api/middleware/auth-guard';
+import { ApproveStackSchema } from '@/app/api/schemas';
 
 export const runtime = 'nodejs';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { slug: string } }
-) {
-  try {
-    const { slug } = params;
-    const body = await request.json();
-    const { stack_choice, reasoning, platform } = body;
+export const POST = withAuth(
+  async (
+    request: NextRequest,
+    { params }: { params: { slug: string } },
+    session: AuthSession
+  ) => {
+    try {
+      const { slug } = params;
+      const body = await request.json();
 
-    if (!stack_choice) {
-      return NextResponse.json(
-        { success: false, error: 'Stack choice is required' },
-        { status: 400 }
-      );
-    }
+      // Validate input with Zod schema
+      const validationResult = ApproveStackSchema.safeParse(body);
+      if (!validationResult.success) {
+        logger.warn('POST /api/projects/:slug/approve-stack - validation failed', {
+          errors: validationResult.error.flatten(),
+        });
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Invalid input',
+            details: validationResult.error.flatten().fieldErrors,
+          },
+          { status: 400 }
+        );
+      }
 
-    const metadata = getProjectMetadata(slug);
+      const { stack_choice, reasoning, platform } = validationResult.data;
 
-    if (!metadata) {
-      return NextResponse.json(
-        { success: false, error: 'Project not found' },
-        { status: 404 }
-      );
-    }
+      const metadata = getProjectMetadata(slug);
 
-    const updated = {
-      ...metadata,
-      stack_choice,
-      platform_type: platform,
-      stack_approved: true,
-      stack_approval_date: new Date().toISOString(),
-      stack_reasoning: reasoning,
-      updated_at: new Date().toISOString()
-    };
+      if (!metadata) {
+        return NextResponse.json(
+          { success: false, error: 'Project not found' },
+          { status: 404 }
+        );
+      }
 
-    saveProjectMetadata(slug, updated);
-    await persistProjectToDB(slug, updated);
-
-    const stackContent = `---
+      // Generate stack approval artifacts
+      const stackContent = `---
 title: "Technology Stack Selection"
 owner: "architect"
 version: "1"
@@ -63,9 +65,7 @@ ${reasoning || 'Stack selection approved.'}
 ${new Date().toISOString()}
 `;
 
-    writeArtifact(slug, 'STACK_SELECTION', 'plan.md', stackContent);
-
-    const readmeContent = `# Stack Selection Documentation
+      const readmeContent = `# Stack Selection Documentation
 
 This folder contains documentation about the approved technology stack for this project.
 
@@ -76,38 +76,79 @@ This folder contains documentation about the approved technology stack for this 
 See plan.md for the full rationale and decision documentation.
 `;
 
-    writeArtifact(slug, 'STACK_SELECTION', 'README.md', readmeContent);
+      // Write artifacts to filesystem
+      writeArtifact(slug, 'STACK_SELECTION', 'plan.md', stackContent);
+      writeArtifact(slug, 'STACK_SELECTION', 'README.md', readmeContent);
 
-    // Log artifacts to database
-    try {
+      // DB-primary: persist artifacts to database
       const dbService = new ProjectDBService();
-      const project = await dbService.getProjectBySlug(slug);
-      if (project) {
-        await dbService.saveArtifact(project.id, 'STACK_SELECTION', 'plan.md', stackContent);
-        await dbService.saveArtifact(project.id, 'STACK_SELECTION', 'README.md', readmeContent);
-      }
-    } catch (dbError) {
-      const dbErr = dbError instanceof Error ? dbError : new Error(String(dbError));
-      logger.error('Warning: Failed to log artifacts to database:', dbErr);
-      // Don't fail the request if database logging fails
-    }
+      const dbProject = await dbService.getProjectBySlug(slug);
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        slug,
+      if (dbProject) {
+        try {
+          await dbService.saveArtifact(
+            dbProject.id,
+            'STACK_SELECTION',
+            'plan.md',
+            stackContent
+          );
+          await dbService.saveArtifact(
+            dbProject.id,
+            'STACK_SELECTION',
+            'README.md',
+            readmeContent
+          );
+
+          logger.info('Stack approval artifacts persisted to database', {
+            slug,
+            projectId: dbProject.id,
+          });
+        } catch (dbError) {
+          logger.warn(
+            `Failed to persist stack artifacts to database: ${dbError instanceof Error ? dbError.message : String(dbError)}`,
+            { slug }
+          );
+          // Don't fail the request; artifacts are still in filesystem
+        }
+      }
+
+      // Update project metadata
+      const updated = {
+        ...metadata,
         stack_choice,
         platform_type: platform,
         stack_approved: true,
-        message: 'Stack selection approved successfully'
-      }
-    });
-  } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
-    logger.error('Error approving stack:', err);
-    return NextResponse.json(
-      { success: false, error: 'Failed to approve stack' },
-      { status: 500 }
-    );
+        stack_approval_date: new Date().toISOString(),
+        stack_reasoning: reasoning,
+        updated_at: new Date().toISOString(),
+      };
+
+      saveProjectMetadata(slug, updated);
+      await persistProjectToDB(slug, updated);
+
+      logger.info('Stack selection approved', {
+        slug,
+        userId: session.user.id,
+        stackChoice: stack_choice,
+      });
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          slug,
+          stack_choice,
+          platform_type: platform,
+          stack_approved: true,
+          message: 'Stack selection approved successfully',
+        },
+      });
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error approving stack:', err);
+      return NextResponse.json(
+        { success: false, error: 'Failed to approve stack' },
+        { status: 500 }
+      );
+    }
   }
-}
+);

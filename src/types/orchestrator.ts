@@ -75,8 +75,9 @@ export interface Project {
 
 export interface OrchestrationState {
   artifact_versions: Record<string, number>;
-  validation_results: Record<string, ValidationResult>;
+  validation_results?: Record<string, ValidationResult>;
   approval_gates: Record<string, boolean>;
+  phase_history?: PhaseHistory[];
 }
 
 export interface ValidationResult {

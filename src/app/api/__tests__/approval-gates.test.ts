@@ -1,0 +1,501 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { NextRequest } from 'next/server';
+import { POST as approveDependencies } from '@/app/api/projects/[slug]/approve-dependencies/route';
+import { POST as executePhase } from '@/app/api/projects/[slug]/execute-phase/route';
+
+// Mock dependencies
+vi.mock('@/backend/services/database/drizzle_project_db_service');
+vi.mock('@/app/api/lib/project-utils');
+vi.mock('@/lib/logger');
+vi.mock('@/backend/services/orchestrator/orchestrator_engine');
+
+import { ProjectDBService } from '@/backend/services/database/drizzle_project_db_service';
+import * as projectUtils from '@/app/api/lib/project-utils';
+import { OrchestratorEngine } from '@/backend/services/orchestrator/orchestrator_engine';
+
+describe('Approval Gates and Phase Execution', () => {
+  const mockMetadata = {
+    id: 'test-id-123',
+    slug: 'test-project',
+    name: 'Test Project',
+    description: 'A test project',
+    current_phase: 'DEPENDENCIES',
+    phases_completed: ['ANALYSIS', 'STACK_SELECTION'],
+    stack_choice: 'Node.js + React',
+    stack_approved: true,
+    dependencies_approved: false,
+    created_at: '2025-01-01T00:00:00Z',
+    updated_at: '2025-01-01T00:00:00Z',
+    orchestration_state: {}
+  };
+
+  const mockProjectData = {
+    id: 'test-id-123',
+    slug: 'test-project',
+    name: 'Test Project',
+    description: 'A test project',
+    currentPhase: 'DEPENDENCIES',
+    phasesCompleted: ['ANALYSIS', 'STACK_SELECTION'],
+    stackChoice: 'Node.js + React',
+    stackApproved: true,
+    dependenciesApproved: false,
+    createdAt: new Date('2025-01-01'),
+    updatedAt: new Date('2025-01-01')
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('POST /api/projects/[slug]/approve-dependencies', () => {
+    it('should approve dependencies successfully', async () => {
+      (projectUtils.getProjectMetadata as any).mockReturnValue(mockMetadata);
+      (projectUtils.saveProjectMetadata as any).mockImplementation(() => {});
+      (projectUtils.persistProjectToDB as any).mockResolvedValue(undefined);
+      (projectUtils.writeArtifact as any).mockImplementation(() => {});
+      (ProjectDBService.prototype.getProjectBySlug as any).mockResolvedValue(mockProjectData);
+      (ProjectDBService.prototype.saveArtifact as any).mockResolvedValue(undefined);
+
+      const request = new NextRequest(
+        new URL('http://localhost:3000/api/projects/test-project/approve-dependencies'),
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            approvalNotes: 'All dependencies reviewed and approved'
+          })
+        }
+      );
+
+      const response = await approveDependencies(request, { params: { slug: 'test-project' } });
+      const json = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(json.success).toBe(true);
+      expect(json.data.dependencies_approved).toBe(true);
+    });
+
+    it('should reject approval if not in DEPENDENCIES phase', async () => {
+      const metadataInWrongPhase = {
+        ...mockMetadata,
+        current_phase: 'ANALYSIS'
+      };
+      (projectUtils.getProjectMetadata as any).mockReturnValue(metadataInWrongPhase);
+
+      const request = new NextRequest(
+        new URL('http://localhost:3000/api/projects/test-project/approve-dependencies'),
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            approvalNotes: 'Some notes'
+          })
+        }
+      );
+
+      const response = await approveDependencies(request, { params: { slug: 'test-project' } });
+      const json = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(json.success).toBe(false);
+      expect(json.error).toContain('Must be in DEPENDENCIES phase');
+    });
+
+    it('should return 404 if project not found', async () => {
+      (projectUtils.getProjectMetadata as any).mockReturnValue(null);
+
+      const request = new NextRequest(
+        new URL('http://localhost:3000/api/projects/missing/approve-dependencies'),
+        {
+          method: 'POST',
+          body: JSON.stringify({})
+        }
+      );
+
+      const response = await approveDependencies(request, { params: { slug: 'missing' } });
+      const json = await response.json();
+
+      expect(response.status).toBe(404);
+      expect(json.success).toBe(false);
+      expect(json.error).toBe('Project not found');
+    });
+
+    it('should save approval metadata with timestamp', async () => {
+      const saveSpy = vi.spyOn(projectUtils, 'saveProjectMetadata');
+      (projectUtils.getProjectMetadata as any).mockReturnValue(mockMetadata);
+      (projectUtils.persistProjectToDB as any).mockResolvedValue(undefined);
+      (projectUtils.writeArtifact as any).mockImplementation(() => {});
+      (ProjectDBService.prototype.getProjectBySlug as any).mockResolvedValue(mockProjectData);
+      (ProjectDBService.prototype.saveArtifact as any).mockResolvedValue(undefined);
+
+      const request = new NextRequest(
+        new URL('http://localhost:3000/api/projects/test-project/approve-dependencies'),
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            approvalNotes: 'Approved'
+          })
+        }
+      );
+
+      await approveDependencies(request, { params: { slug: 'test-project' } });
+
+      expect(saveSpy).toHaveBeenCalledWith(
+        'test-project',
+        expect.objectContaining({
+          dependencies_approved: true,
+          dependencies_approval_date: expect.any(String),
+          dependencies_approval_notes: 'Approved'
+        })
+      );
+    });
+
+    it('should write approval artifact to filesystem', async () => {
+      const writeArtifactSpy = vi.spyOn(projectUtils, 'writeArtifact');
+      (projectUtils.getProjectMetadata as any).mockReturnValue(mockMetadata);
+      (projectUtils.saveProjectMetadata as any).mockImplementation(() => {});
+      (projectUtils.persistProjectToDB as any).mockResolvedValue(undefined);
+      (ProjectDBService.prototype.getProjectBySlug as any).mockResolvedValue(mockProjectData);
+      (ProjectDBService.prototype.saveArtifact as any).mockResolvedValue(undefined);
+
+      const request = new NextRequest(
+        new URL('http://localhost:3000/api/projects/test-project/approve-dependencies'),
+        {
+          method: 'POST',
+          body: JSON.stringify({})
+        }
+      );
+
+      await approveDependencies(request, { params: { slug: 'test-project' } });
+
+      expect(writeArtifactSpy).toHaveBeenCalledWith(
+        'test-project',
+        'DEPENDENCIES',
+        'approval.md',
+        expect.stringContaining('Dependencies Approval')
+      );
+    });
+
+    it('should persist changes to database', async () => {
+      const persistSpy = vi.spyOn(projectUtils, 'persistProjectToDB');
+      (projectUtils.getProjectMetadata as any).mockReturnValue(mockMetadata);
+      (projectUtils.saveProjectMetadata as any).mockImplementation(() => {});
+      (projectUtils.writeArtifact as any).mockImplementation(() => {});
+      (ProjectDBService.prototype.getProjectBySlug as any).mockResolvedValue(mockProjectData);
+      (ProjectDBService.prototype.saveArtifact as any).mockResolvedValue(undefined);
+
+      const request = new NextRequest(
+        new URL('http://localhost:3000/api/projects/test-project/approve-dependencies'),
+        {
+          method: 'POST',
+          body: JSON.stringify({})
+        }
+      );
+
+      await approveDependencies(request, { params: { slug: 'test-project' } });
+
+      expect(persistSpy).toHaveBeenCalledWith('test-project', expect.any(Object));
+    });
+
+    it('should handle database logging errors gracefully', async () => {
+      (projectUtils.getProjectMetadata as any).mockReturnValue(mockMetadata);
+      (projectUtils.saveProjectMetadata as any).mockImplementation(() => {});
+      (projectUtils.persistProjectToDB as any).mockResolvedValue(undefined);
+      (projectUtils.writeArtifact as any).mockImplementation(() => {});
+      (ProjectDBService.prototype.getProjectBySlug as any).mockResolvedValue(mockProjectData);
+      (ProjectDBService.prototype.saveArtifact as any).mockRejectedValue(new Error('DB error'));
+
+      const request = new NextRequest(
+        new URL('http://localhost:3000/api/projects/test-project/approve-dependencies'),
+        {
+          method: 'POST',
+          body: JSON.stringify({})
+        }
+      );
+
+      const response = await approveDependencies(request, { params: { slug: 'test-project' } });
+      const json = await response.json();
+
+      // Should still succeed despite DB error
+      expect(response.status).toBe(200);
+      expect(json.success).toBe(true);
+    });
+  });
+
+  describe('POST /api/projects/[slug]/execute-phase', () => {
+    const metadataForAnalysis = {
+      ...mockMetadata,
+      current_phase: 'ANALYSIS',
+      phases_completed: []
+    };
+
+    it('should reject execution for STACK_SELECTION phase (requires user input)', async () => {
+      const metadataStackSelection = {
+        ...mockMetadata,
+        current_phase: 'STACK_SELECTION'
+      };
+      (projectUtils.getProjectMetadata as any).mockReturnValue(metadataStackSelection);
+
+      const request = new NextRequest(
+        new URL('http://localhost:3000/api/projects/test-project/execute-phase'),
+        { method: 'POST' }
+      );
+
+      const response = await executePhase(request, { params: { slug: 'test-project' } });
+      const json = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(json.success).toBe(false);
+      expect(json.error).toContain('requires user input');
+    });
+
+    it('should reject execution for DONE phase', async () => {
+      const metadataDone = {
+        ...mockMetadata,
+        current_phase: 'DONE'
+      };
+      (projectUtils.getProjectMetadata as any).mockReturnValue(metadataDone);
+
+      const request = new NextRequest(
+        new URL('http://localhost:3000/api/projects/test-project/execute-phase'),
+        { method: 'POST' }
+      );
+
+      const response = await executePhase(request, { params: { slug: 'test-project' } });
+      const json = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(json.success).toBe(false);
+      expect(json.error).toContain('Final phase');
+    });
+
+    it('should return 404 if project not found', async () => {
+      (projectUtils.getProjectMetadata as any).mockReturnValue(null);
+
+      const request = new NextRequest(
+        new URL('http://localhost:3000/api/projects/missing/execute-phase'),
+        { method: 'POST' }
+      );
+
+      const response = await executePhase(request, { params: { slug: 'missing' } });
+      const json = await response.json();
+
+      expect(response.status).toBe(404);
+      expect(json.success).toBe(false);
+      expect(json.error).toBe('Project not found');
+    });
+
+    it('should collect artifacts from previous phases', async () => {
+      const listArtifactsSpy = vi.spyOn(projectUtils, 'listArtifacts');
+      (projectUtils.getProjectMetadata as any).mockReturnValue(metadataForAnalysis);
+      (projectUtils.listArtifacts as any).mockReturnValue([]);
+      (OrchestratorEngine.prototype.runPhaseAgent as any).mockResolvedValue({
+        success: true,
+        message: 'Phase executed',
+        artifacts: {}
+      });
+      (projectUtils.saveProjectMetadata as any).mockImplementation(() => {});
+      (projectUtils.persistProjectToDB as any).mockResolvedValue(undefined);
+      (ProjectDBService.prototype.getProjectBySlug as any).mockResolvedValue(mockProjectData);
+      (ProjectDBService.prototype.recordPhaseHistory as any).mockResolvedValue(undefined);
+
+      const request = new NextRequest(
+        new URL('http://localhost:3000/api/projects/test-project/execute-phase'),
+        { method: 'POST' }
+      );
+
+      await executePhase(request, { params: { slug: 'test-project' } });
+
+      expect(listArtifactsSpy).toHaveBeenCalled();
+    });
+
+    it('should execute orchestrator for automatable phases', async () => {
+      const runPhaseSpy = vi.spyOn(OrchestratorEngine.prototype, 'runPhaseAgent');
+      (projectUtils.getProjectMetadata as any).mockReturnValue(metadataForAnalysis);
+      (projectUtils.listArtifacts as any).mockReturnValue([]);
+      runPhaseSpy.mockResolvedValue({
+        success: true,
+        message: 'Analysis phase executed',
+        artifacts: { 'analysis.md': 'content' }
+      });
+      (projectUtils.saveProjectMetadata as any).mockImplementation(() => {});
+      (projectUtils.persistProjectToDB as any).mockResolvedValue(undefined);
+      (ProjectDBService.prototype.getProjectBySlug as any).mockResolvedValue(mockProjectData);
+      (ProjectDBService.prototype.recordPhaseHistory as any).mockResolvedValue(undefined);
+
+      const request = new NextRequest(
+        new URL('http://localhost:3000/api/projects/test-project/execute-phase'),
+        { method: 'POST' }
+      );
+
+      const response = await executePhase(request, { params: { slug: 'test-project' } });
+      const json = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(json.success).toBe(true);
+      expect(runPhaseSpy).toHaveBeenCalled();
+    });
+
+    it('should record phase completion in database', async () => {
+      const recordHistorySpy = vi.spyOn(ProjectDBService.prototype, 'recordPhaseHistory');
+      (projectUtils.getProjectMetadata as any).mockReturnValue(metadataForAnalysis);
+      (projectUtils.listArtifacts as any).mockReturnValue([]);
+      (OrchestratorEngine.prototype.runPhaseAgent as any).mockResolvedValue({
+        success: true,
+        message: 'Phase executed',
+        artifacts: {}
+      });
+      (projectUtils.saveProjectMetadata as any).mockImplementation(() => {});
+      (projectUtils.persistProjectToDB as any).mockResolvedValue(undefined);
+      (ProjectDBService.prototype.getProjectBySlug as any).mockResolvedValue(mockProjectData);
+
+      const request = new NextRequest(
+        new URL('http://localhost:3000/api/projects/test-project/execute-phase'),
+        { method: 'POST' }
+      );
+
+      await executePhase(request, { params: { slug: 'test-project' } });
+
+      expect(recordHistorySpy).toHaveBeenCalledWith(
+        mockProjectData.id,
+        'ANALYSIS',
+        'completed'
+      );
+    });
+
+    it('should record phase failure in database', async () => {
+      const recordHistorySpy = vi.spyOn(ProjectDBService.prototype, 'recordPhaseHistory');
+      (projectUtils.getProjectMetadata as any).mockReturnValue(metadataForAnalysis);
+      (projectUtils.listArtifacts as any).mockReturnValue([]);
+      (OrchestratorEngine.prototype.runPhaseAgent as any).mockResolvedValue({
+        success: false,
+        message: 'Phase execution failed',
+        artifacts: {}
+      });
+      (ProjectDBService.prototype.getProjectBySlug as any).mockResolvedValue(mockProjectData);
+
+      const request = new NextRequest(
+        new URL('http://localhost:3000/api/projects/test-project/execute-phase'),
+        { method: 'POST' }
+      );
+
+      const response = await executePhase(request, { params: { slug: 'test-project' } });
+
+      expect(recordHistorySpy).toHaveBeenCalledWith(
+        mockProjectData.id,
+        'ANALYSIS',
+        'failed',
+        'Phase execution failed'
+      );
+      expect(response.status).toBe(500);
+    });
+
+    it('should return artifacts from orchestrator', async () => {
+      const artifacts = {
+        'analysis.md': 'Analysis content',
+        'summary.md': 'Summary content'
+      };
+      (projectUtils.getProjectMetadata as any).mockReturnValue(metadataForAnalysis);
+      (projectUtils.listArtifacts as any).mockReturnValue([]);
+      (OrchestratorEngine.prototype.runPhaseAgent as any).mockResolvedValue({
+        success: true,
+        message: 'Phase executed',
+        artifacts
+      });
+      (projectUtils.saveProjectMetadata as any).mockImplementation(() => {});
+      (projectUtils.persistProjectToDB as any).mockResolvedValue(undefined);
+      (ProjectDBService.prototype.getProjectBySlug as any).mockResolvedValue(mockProjectData);
+      (ProjectDBService.prototype.recordPhaseHistory as any).mockResolvedValue(undefined);
+
+      const request = new NextRequest(
+        new URL('http://localhost:3000/api/projects/test-project/execute-phase'),
+        { method: 'POST' }
+      );
+
+      const response = await executePhase(request, { params: { slug: 'test-project' } });
+      const json = await response.json();
+
+      expect(json.data.artifact_count).toBe(2);
+      expect(json.data.artifacts).toEqual(['analysis.md', 'summary.md']);
+    });
+
+    it('should handle orchestrator execution errors', async () => {
+      (projectUtils.getProjectMetadata as any).mockReturnValue(metadataForAnalysis);
+      (projectUtils.listArtifacts as any).mockReturnValue([]);
+      (OrchestratorEngine.prototype.runPhaseAgent as any).mockRejectedValue(
+        new Error('LLM API error')
+      );
+      (ProjectDBService.prototype.getProjectBySlug as any).mockResolvedValue(mockProjectData);
+
+      const request = new NextRequest(
+        new URL('http://localhost:3000/api/projects/test-project/execute-phase'),
+        { method: 'POST' }
+      );
+
+      const response = await executePhase(request, { params: { slug: 'test-project' } });
+      const json = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(json.success).toBe(false);
+    });
+
+    it('should update project metadata after execution', async () => {
+      const saveMetadataSpy = vi.spyOn(projectUtils, 'saveProjectMetadata');
+      (projectUtils.getProjectMetadata as any).mockReturnValue(metadataForAnalysis);
+      (projectUtils.listArtifacts as any).mockReturnValue([]);
+      (OrchestratorEngine.prototype.runPhaseAgent as any).mockResolvedValue({
+        success: true,
+        message: 'Phase executed',
+        artifacts: {}
+      });
+      (projectUtils.persistProjectToDB as any).mockResolvedValue(undefined);
+      (ProjectDBService.prototype.getProjectBySlug as any).mockResolvedValue(mockProjectData);
+      (ProjectDBService.prototype.recordPhaseHistory as any).mockResolvedValue(undefined);
+
+      const request = new NextRequest(
+        new URL('http://localhost:3000/api/projects/test-project/execute-phase'),
+        { method: 'POST' }
+      );
+
+      await executePhase(request, { params: { slug: 'test-project' } });
+
+      expect(saveMetadataSpy).toHaveBeenCalledWith(
+        'test-project',
+        expect.objectContaining({
+          updated_at: expect.any(String)
+        })
+      );
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should handle invalid request body gracefully', async () => {
+      (projectUtils.getProjectMetadata as any).mockReturnValue(mockMetadata);
+
+      const request = new NextRequest(
+        new URL('http://localhost:3000/api/projects/test-project/approve-dependencies'),
+        {
+          method: 'POST',
+          body: 'invalid json'
+        }
+      );
+
+      expect(async () => {
+        await request.json();
+      }).rejects.toThrow();
+    });
+
+    it('should include appropriate error messages in responses', async () => {
+      (projectUtils.getProjectMetadata as any).mockReturnValue(null);
+
+      const request = new NextRequest(
+        new URL('http://localhost:3000/api/projects/missing/approve-dependencies'),
+        { method: 'POST', body: JSON.stringify({}) }
+      );
+
+      const response = await approveDependencies(request, { params: { slug: 'missing' } });
+      const json = await response.json();
+
+      expect(json.error).toBeDefined();
+      expect(typeof json.error).toBe('string');
+    });
+  });
+});

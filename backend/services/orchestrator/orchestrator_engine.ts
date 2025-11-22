@@ -202,8 +202,8 @@ export class OrchestratorEngine {
     try {
       logger.info(`Executing agent for phase: ${currentPhaseName}`);
 
-      // Load spec fresh right before using it (lazy load to avoid context loss)
-      const spec = new ConfigLoader().loadSpec();
+      // Use cached spec from constructor (loaded once to avoid drift)
+      const spec = this.spec;
 
       // Validate spec is loaded
       if (!spec || !spec.phases) {
@@ -215,8 +215,8 @@ export class OrchestratorEngine {
         throw new Error(`Unknown phase: ${currentPhaseName}`);
       }
 
-      // Create all dependencies fresh right before using them
-      const validators = new Validators(spec.validators);
+      // Use cached validators (initialized in constructor)
+      const validators = this.validators;
       const artifactManager = new ArtifactManager();
 
       // Create GeminiClient locally from spec config
@@ -330,13 +330,22 @@ export class OrchestratorEngine {
       // to prevent context loss after long async operations
       const freshOrchestrationState = orchestrationState || {
         artifact_versions: {},
-        phase_history: []
+        phase_history: [],
+        approval_gates: {}
       };
 
-      // Update artifact versions with fresh orchestration state
+      // Ensure all required properties exist to prevent undefined access
       if (!freshOrchestrationState.artifact_versions) {
         freshOrchestrationState.artifact_versions = {};
       }
+      if (!freshOrchestrationState.phase_history) {
+        freshOrchestrationState.phase_history = [];
+      }
+      if (!freshOrchestrationState.approval_gates) {
+        freshOrchestrationState.approval_gates = {};
+      }
+
+      // Update artifact versions with fresh orchestration state
       if (!freshOrchestrationState.artifact_versions[currentPhaseName]) {
         freshOrchestrationState.artifact_versions[currentPhaseName] = 1;
       } else {

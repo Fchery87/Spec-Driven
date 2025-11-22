@@ -34,8 +34,35 @@ export class ProjectDBService {
       currentPhase: 'ANALYSIS',
       phasesCompleted: ''
     }).returning();
-    
+
     return result[0];
+  }
+
+  /**
+   * Create a new project with full orchestration state initialized
+   */
+  async createProjectWithState(data: {
+    name: string;
+    description?: string;
+    slug: string;
+  }) {
+    // First create the project
+    const project = await this.createProject(data);
+
+    // Initialize full orchestration state to prevent undefined access later
+    const orchestrationState = {
+      artifact_versions: {},
+      phase_history: [],
+      approval_gates: {}
+    };
+
+    logger.info('Project created with initialized orchestration state', {
+      projectId: project.id,
+      slug: project.slug,
+      orchestrationState
+    });
+
+    return { ...project, orchestrationState };
   }
 
   /**
