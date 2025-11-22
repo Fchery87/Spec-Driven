@@ -192,29 +192,21 @@ export class OrchestratorEngine {
     message: string;
   }> {
     logger.info('[OrchestratorEngine] runPhaseAgent called for phase: ' + project.current_phase);
-    logger.info('[OrchestratorEngine] this.spec exists? ' + !!this.spec);
-    logger.info('[OrchestratorEngine] this.spec.phases exists? ' + !!this.spec?.phases);
-    logger.info('[OrchestratorEngine] this.spec.phases type: ' + typeof this.spec?.phases);
-    logger.info('[OrchestratorEngine] this.spec.phases keys: ' + (this.spec?.phases ? Object.keys(this.spec.phases).join(', ') : 'N/A'));
 
-    let spec = this.spec;
-    if (!spec || !spec.phases) {
-      logger.warn('[OrchestratorEngine] spec missing in runPhaseAgent, reloading spec from disk');
-      spec = new ConfigLoader().loadSpec();
-      this.spec = spec;
-    }
-
-    // Store references to instance properties BEFORE async operations
-    // This prevents context loss in Next.js RSC environment after awaits
+    // Load a fresh spec each call to avoid any context loss between awaits
+    // Store ALL references locally BEFORE any async operations to prevent Next.js RSC context loss
+    const spec = new ConfigLoader().loadSpec();
+    const validators = new Validators(spec.validators);
+    const artifactManager = new ArtifactManager();
     const llmClient = this.llmClient;
-    const artifactManager = this.artifactManager;
 
-    // Double-check spec is still available
+    // Validate spec is loaded
     if (!spec || !spec.phases) {
-      throw new Error('[CRITICAL] spec was lost after variable capture');
+      throw new Error('[CRITICAL] Failed to load orchestrator spec with phases');
     }
 
-    const currentPhase = spec.phases[project.current_phase];
+    const phases = spec.phases;
+    const currentPhase = phases[project.current_phase];
     if (!currentPhase) {
       throw new Error(`Unknown phase: ${project.current_phase}`);
     }
@@ -232,10 +224,6 @@ export class OrchestratorEngine {
             project.id,
             artifacts
           );
-          // Safety check after async
-          if (!spec || !spec.phases) {
-            throw new Error('[CRITICAL] spec was lost after ANALYSIS executor');
-          }
           break;
 
         case 'SPEC':
@@ -247,10 +235,6 @@ export class OrchestratorEngine {
             artifacts,
             project.stack_choice
           );
-          // Safety check after async
-          if (!spec || !spec.phases) {
-            throw new Error('[CRITICAL] spec was lost after PM executor');
-          }
 
           // Then generate data model and API spec with Architect
           // Add the newly generated PRD to artifacts for Architect to use
@@ -262,12 +246,9 @@ export class OrchestratorEngine {
           const architectArtifacts = await getArchitectExecutor(
             llmClient,
             project.id,
-            artifactsWithPRD
+            artifactsWithPRD,
+            'SPEC'
           );
-          // Safety check after async
-          if (!spec || !spec.phases) {
-            throw new Error('[CRITICAL] spec was lost after Architect executor');
-          }
 
           // Combine all artifacts
           generatedArtifacts = {
@@ -284,10 +265,6 @@ export class OrchestratorEngine {
             ...arch,
             ...scrum
           }));
-          // Safety check after async
-          if (!spec || !spec.phases) {
-            throw new Error('[CRITICAL] spec was lost after SOLUTIONING executors');
-          }
           break;
 
         case 'DEPENDENCIES':
@@ -297,10 +274,6 @@ export class OrchestratorEngine {
             artifacts,
             project.stack_choice
           );
-          // Safety check after async
-          if (!spec || !spec.phases) {
-            throw new Error('[CRITICAL] spec was lost after DEPENDENCIES executor');
-          }
           break;
 
         case 'STACK_SELECTION':
@@ -323,7 +296,8 @@ export class OrchestratorEngine {
           throw new Error(`No executor for phase: ${project.current_phase}`);
       }
 
-      // Save artifacts to storage
+      // Save artifacts to storage and normalize artifact keys with phase prefix
+      const normalizedArtifacts: Record<string, string> = {};
       for (const [filename, content] of Object.entries(generatedArtifacts)) {
         await artifactManager.saveArtifact(
           project.id,
@@ -331,6 +305,9 @@ export class OrchestratorEngine {
           filename,
           content
         );
+        // Normalize artifact keys to include phase prefix for downstream executors
+        const key = `${project.current_phase}/${filename}`;
+        normalizedArtifacts[key] = content;
       }
 
       // Update artifact versions
@@ -342,7 +319,7 @@ export class OrchestratorEngine {
 
       return {
         success: true,
-        artifacts: generatedArtifacts,
+        artifacts: normalizedArtifacts,
         message: `Agent for phase ${project.current_phase} completed successfully`
       };
     } catch (error) {

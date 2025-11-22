@@ -1,239 +1,59 @@
 import { GeminiClient } from './llm_client';
-import { AgentContext, AgentOutput, LLMConfig } from '@/types/llm';
 import { ConfigLoader } from '../orchestrator/config_loader';
 import { logger } from '@/lib/logger';
 
-export class AgentExecutor {
-  private llmClient: GeminiClient;
-  private configLoader: ConfigLoader;
+/**
+ * PURE FUNCTION ARCHITECTURE
+ *
+ * All executor functions are pure functions that:
+ * - Take all dependencies as parameters (no class instances)
+ * - Have no side effects (except logging)
+ * - Can be safely called across async boundaries in Next.js RSC
+ *
+ * This eliminates context loss issues in React Server Components
+ */
 
-  constructor() {
-    const config = new ConfigLoader();
-    const llmConfigData = config.getSection('llm_config') as any;
+// ============================================================================
+// PROMPT BUILDING HELPERS
+// ============================================================================
 
-    const llmConfig: LLMConfig = {
-      provider: llmConfigData.provider || 'gemini',
-      model: llmConfigData.model || 'gemini-2.5-flash',
-      max_tokens: llmConfigData.max_tokens || 8192,
-      temperature: llmConfigData.temperature || 0.7,
-      timeout_seconds: llmConfigData.timeout_seconds || 120,
-      api_key: process.env.GEMINI_API_KEY
-    };
+function buildPrompt(template: string, variables: Record<string, any>): string {
+  let prompt = template;
 
-    this.llmClient = new GeminiClient(llmConfig);
-    this.configLoader = config;
+  for (const [key, value] of Object.entries(variables)) {
+    const placeholder = `{{${key}}}`;
+    const replacement = value || '';
+    prompt = prompt.replace(new RegExp(placeholder, 'g'), String(replacement));
   }
 
-  /**
-   * Run Analyst Agent
-   */
-  async runAnalystAgent(projectIdea: string, context: AgentContext): Promise<AgentOutput> {
-    const agentSpec = this.configLoader.getSection('agents').analyst;
-    const prompt = this.buildAgentPrompt(agentSpec.prompt_template, {
-      projectIdea,
-      phase: context.phase
-    });
+  return prompt;
+}
 
-    const response = await this.llmClient.generateCompletion(prompt);
-    
-    return this.parseAgentOutput(response.content, [
-      'constitution.md',
-      'project-brief.md',
-      'personas.md'
-    ]);
+// ============================================================================
+// ARTIFACT PARSING
+// ============================================================================
+
+function parseArtifacts(content: string, expectedFiles: string[]): Record<string, string> {
+  const artifacts: Record<string, string> = {};
+
+  // Try to extract files from markdown code blocks with explicit filename markers
+  const fileRegex = /```(\w+)?\n?filename:\s*(.+?)\n([\s\S]*?)```/g;
+  let match;
+
+  while ((match = fileRegex.exec(content)) !== null) {
+    const [, language, filename, fileContent] = match;
+    artifacts[filename.trim()] = fileContent.trim();
   }
 
-  /**
-   * Run Product Manager Agent
-   */
-  async runPMAgent(brief: string, personas: string, context: AgentContext): Promise<AgentOutput> {
-    const agentSpec = this.configLoader.getSection('agents').pm;
-    const prompt = this.buildAgentPrompt(agentSpec.prompt_template, {
-      brief,
-      personas,
-      phase: context.phase
-    });
-
-    const response = await this.llmClient.generateWithContext(prompt, {
-      'project-brief.md': brief,
-      'personas.md': personas
-    });
-    
-    return this.parseAgentOutput(response.content, ['PRD.md']);
-  }
-
-  /**
-   * Run Architect Agent
-   */
-  async runArchitectAgent(
-    brief: string,
-    context: AgentContext,
-    prd?: string
-  ): Promise<AgentOutput> {
-    const agentSpec = this.configLoader.getSection('agents').architect;
-    
-    let prompt: string;
-    let artifacts: Record<string, string> = { 'project-brief.md': brief };
-
-    if (context.phase === 'STACK_SELECTION') {
-      // Generate stack proposal
-      prompt = this.buildAgentPrompt(agentSpec.prompt_template, {
-        brief,
-        phase: 'stack_selection'
-      });
-    } else if (context.phase === 'SPEC') {
-      // Generate data model and API spec
-      prompt = this.buildAgentPrompt(agentSpec.prompt_template, {
-        brief,
-        prd: prd || '',
-        phase: 'spec'
-      });
-      if (prd) artifacts['PRD.md'] = prd;
-    } else if (context.phase === 'SOLUTIONING') {
-      // Generate architecture document
-      prompt = this.buildAgentPrompt(agentSpec.prompt_template, {
-        brief,
-        prd: prd || '',
-        phase: 'solutioning'
-      });
-      if (prd) artifacts['PRD.md'] = prd;
-    } else {
-      throw new Error(`Architect agent not configured for phase: ${context.phase}`);
-    }
-
-    const response = await this.llmClient.generateWithContext(prompt, artifacts);
-    
-    const expectedOutputs = context.phase === 'STACK_SELECTION' 
-      ? ['stack-proposal.md'] 
-      : context.phase === 'SPEC'
-      ? ['data-model.md', 'api-spec.json']
-      : ['architecture.md'];
-    
-    return this.parseAgentOutput(response.content, expectedOutputs);
-  }
-
-  /**
-   * Run Scrum Master Agent
-   */
-  async runScrumMasterAgent(
-    prd: string,
-    architecture: string,
-    dataModel: string,
-    apiSpec: string,
-    context: AgentContext
-  ): Promise<AgentOutput> {
-    const agentSpec = this.configLoader.getSection('agents').scrummaster;
-    const prompt = this.buildAgentPrompt(agentSpec.prompt_template, {
-      phase: context.phase
-    });
-
-    const response = await this.llmClient.generateWithContext(prompt, {
-      'PRD.md': prd,
-      'architecture.md': architecture,
-      'data-model.md': dataModel,
-      'api-spec.json': apiSpec
-    });
-    
-    return this.parseAgentOutput(response.content, [
-      'epics.md',
-      'tasks.md'
-    ]);
-  }
-
-  /**
-   * Run DevOps Agent
-   */
-  async runDevOpsAgent(
-    prd: string,
-    stackChoice: string,
-    context: AgentContext
-  ): Promise<AgentOutput> {
-    const agentSpec = this.configLoader.getSection('agents').devops;
-    const prompt = this.buildAgentPrompt(agentSpec.prompt_template, {
-      prd,
-      stackChoice,
-      phase: context.phase
-    });
-
-    const stacks = this.configLoader.getSection('stacks');
-    const stackInfo = stacks[stackChoice];
-
-    const response = await this.llmClient.generateWithContext(prompt, {
-      'PRD.md': prd,
-      'stack-info.json': JSON.stringify(stackInfo, null, 2)
-    });
-    
-    return this.parseAgentOutput(response.content, [
-      'DEPENDENCIES.md',
-      'dependency-proposal.md'
-    ]);
-  }
-
-  /**
-   * Build agent-specific prompt
-   */
-  private buildAgentPrompt(template: string, variables: Record<string, any>): string {
-    let prompt = template;
-    
-    for (const [key, value] of Object.entries(variables)) {
-      const placeholder = `{{${key}}}`;
-      prompt = prompt.replace(new RegExp(placeholder, 'g'), String(value));
-    }
-    
-    return prompt;
-  }
-
-  /**
-   * Parse agent output into separate artifacts
-   */
-  private parseAgentOutput(content: string, expectedFiles: string[]): AgentOutput {
-    const artifacts: Record<string, string> = {};
-
-    // Try to extract files from markdown code blocks with explicit filename markers
-    const fileRegex = /```(\w+)?\n?filename:\s*(.+?)\n([\s\S]*?)```/g;
-    let match;
-
-    while ((match = fileRegex.exec(content)) !== null) {
-      const [, language, filename, fileContent] = match;
-      artifacts[filename.trim()] = fileContent.trim();
-    }
-
-    // If some but not all files found, try to fill in missing ones from content headers
-    if (Object.keys(artifacts).length > 0 && Object.keys(artifacts).length < expectedFiles.length) {
-      for (const filename of expectedFiles) {
-        if (!artifacts[filename]) {
-          // Try to find this file by header
-          const fileHeader = new RegExp(`#?\\s*${filename.replace('.', '\\.')}`, 'i');
-          const parts = content.split(fileHeader);
-
-          if (parts.length > 1) {
-            let fileContent = parts[1];
-            // Find the next file header or end of content
-            for (const otherFile of expectedFiles) {
-              if (otherFile !== filename) {
-                const nextHeader = new RegExp(`#?\\s*${otherFile.replace('.', '\\.')}`, 'i');
-                const headerParts = fileContent.split(nextHeader);
-                if (headerParts.length > 1) {
-                  fileContent = headerParts[0];
-                  break;
-                }
-              }
-            }
-            artifacts[filename] = fileContent.trim();
-          }
-        }
-      }
-    }
-
-    // If no files extracted yet, try header-based parsing for all expected files
-    if (Object.keys(artifacts).length === 0) {
-      for (const filename of expectedFiles) {
+  // If some but not all files found, try header-based parsing
+  if (Object.keys(artifacts).length > 0 && Object.keys(artifacts).length < expectedFiles.length) {
+    for (const filename of expectedFiles) {
+      if (!artifacts[filename]) {
         const fileHeader = new RegExp(`#?\\s*${filename.replace('.', '\\.')}`, 'i');
         const parts = content.split(fileHeader);
 
         if (parts.length > 1) {
           let fileContent = parts[1];
-          // Find the next file header or end of content
           for (const otherFile of expectedFiles) {
             if (otherFile !== filename) {
               const nextHeader = new RegExp(`#?\\s*${otherFile.replace('.', '\\.')}`, 'i');
@@ -248,81 +68,218 @@ export class AgentExecutor {
         }
       }
     }
+  }
 
-    // Fallback: if still no artifacts found, put entire content into first expected file
-    // This ensures at least one file is created
-    if (Object.keys(artifacts).length === 0 && expectedFiles.length > 0) {
-      logger.warn(`Failed to parse artifacts. Expected files: ${expectedFiles.join(', ')}`);
-      logger.warn(`Putting entire response in first expected file: ${expectedFiles[0]}`);
-      artifacts[expectedFiles[0]] = content;
-    }
-
-    // Ensure all expected files are present (fill in missing ones with empty strings for now)
+  // If no files extracted, try header-based parsing for all expected files
+  if (Object.keys(artifacts).length === 0) {
     for (const filename of expectedFiles) {
-      if (!artifacts[filename]) {
-        logger.warn(`Missing expected artifact: ${filename}. Creating placeholder.`);
-        artifacts[filename] = '';
+      const fileHeader = new RegExp(`#?\\s*${filename.replace('.', '\\.')}`, 'i');
+      const parts = content.split(fileHeader);
+
+      if (parts.length > 1) {
+        let fileContent = parts[1];
+        for (const otherFile of expectedFiles) {
+          if (otherFile !== filename) {
+            const nextHeader = new RegExp(`#?\\s*${otherFile.replace('.', '\\.')}`, 'i');
+            const headerParts = fileContent.split(nextHeader);
+            if (headerParts.length > 1) {
+              fileContent = headerParts[0];
+              break;
+            }
+          }
+        }
+        artifacts[filename] = fileContent.trim();
       }
     }
-
-    return {
-      artifacts,
-      metadata: {
-        generated_at: new Date().toISOString(),
-        expected_files: expectedFiles,
-        actual_files: Object.keys(artifacts)
-      }
-    };
   }
 
-  /**
-   * Test agent execution
-   */
-  async testAgent(agentType: string): Promise<boolean> {
-    try {
-      switch (agentType) {
-        case 'analyst':
-          await this.runAnalystAgent('Test project idea', { 
-            project_id: 'test', 
-            phase: 'ANALYSIS', 
-            artifacts: {} 
-          });
-          break;
-        case 'pm':
-          await this.runPMAgent('Test brief', 'Test personas', { 
-            project_id: 'test', 
-            phase: 'SPEC', 
-            artifacts: {} 
-          });
-          break;
-        default:
-          return false;
-      }
-      return true;
-    } catch {
-      return false;
+  // Fallback: if still no artifacts, put entire content into first file
+  if (Object.keys(artifacts).length === 0 && expectedFiles.length > 0) {
+    logger.warn(`Failed to parse artifacts. Expected files: ${expectedFiles.join(', ')}`);
+    logger.warn(`Putting entire response in first expected file: ${expectedFiles[0]}`);
+    artifacts[expectedFiles[0]] = content;
+  }
+
+  // Fill missing files with empty strings
+  for (const filename of expectedFiles) {
+    if (!artifacts[filename]) {
+      logger.warn(`Missing expected artifact: ${filename}. Creating placeholder.`);
+      artifacts[filename] = '';
     }
   }
+
+  return artifacts;
+}
+
+// ============================================================================
+// PURE EXECUTOR FUNCTIONS
+// ============================================================================
+
+/**
+ * Execute Analyst Agent (ANALYSIS phase)
+ * Generates: constitution.md, project-brief.md, personas.md
+ */
+async function executeAnalystAgent(
+  llmClient: GeminiClient,
+  configLoader: ConfigLoader,
+  projectIdea: string
+): Promise<Record<string, string>> {
+  logger.info('[ANALYSIS] Executing Analyst Agent');
+
+  const agentConfig = configLoader.getSection('agents').analyst;
+  const prompt = buildPrompt(agentConfig.prompt_template, {
+    projectIdea
+  });
+
+  const response = await llmClient.generateCompletion(prompt);
+  const artifacts = parseArtifacts(response.content, [
+    'constitution.md',
+    'project-brief.md',
+    'personas.md'
+  ]);
+
+  logger.info('[ANALYSIS] Agent completed', { artifacts: Object.keys(artifacts) });
+  return artifacts;
 }
 
 /**
- * Wrapper functions for orchestrator to call agents
- * These functions are called by OrchestratorEngine.runPhaseAgent()
+ * Execute PM Agent (SPEC phase - PRD generation)
+ * Generates: PRD.md
  */
+async function executePMAgent(
+  llmClient: GeminiClient,
+  configLoader: ConfigLoader,
+  projectBrief: string,
+  personas: string
+): Promise<Record<string, string>> {
+  logger.info('[SPEC] Executing PM Agent for PRD generation');
+
+  const agentConfig = configLoader.getSection('agents').pm;
+  const prompt = buildPrompt(agentConfig.prompt_template, {
+    brief: projectBrief,
+    personas: personas
+  });
+
+  const response = await llmClient.generateCompletion(prompt);
+  const artifacts = parseArtifacts(response.content, ['PRD.md']);
+
+  logger.info('[SPEC] PM Agent completed', { artifacts: Object.keys(artifacts) });
+  return artifacts;
+}
+
+/**
+ * Execute Architect Agent
+ * Can generate different outputs based on phase:
+ * - SPEC phase: data-model.md, api-spec.json
+ * - SOLUTIONING phase: architecture.md
+ */
+async function executeArchitectAgent(
+  llmClient: GeminiClient,
+  configLoader: ConfigLoader,
+  phase: 'SPEC' | 'SOLUTIONING',
+  projectBrief: string,
+  prd: string = ''
+): Promise<Record<string, string>> {
+  logger.info(`[${phase}] Executing Architect Agent`);
+
+  const agentConfig = configLoader.getSection('agents').architect;
+
+  let expectedFiles: string[];
+  let variables: Record<string, any>;
+
+  if (phase === 'SPEC') {
+    expectedFiles = ['data-model.md', 'api-spec.json'];
+    variables = {
+      brief: projectBrief,
+      prd: prd,
+      phase: 'spec'
+    };
+  } else {
+    expectedFiles = ['architecture.md'];
+    variables = {
+      brief: projectBrief,
+      prd: prd,
+      phase: 'solutioning'
+    };
+  }
+
+  const prompt = buildPrompt(agentConfig.prompt_template, variables);
+  const response = await llmClient.generateCompletion(prompt);
+  const artifacts = parseArtifacts(response.content, expectedFiles);
+
+  logger.info(`[${phase}] Architect Agent completed`, { artifacts: Object.keys(artifacts) });
+  return artifacts;
+}
+
+/**
+ * Execute Scrum Master Agent (SOLUTIONING phase)
+ * Generates: epics.md, tasks.md
+ */
+async function executeScrumMasterAgent(
+  llmClient: GeminiClient,
+  configLoader: ConfigLoader,
+  prd: string,
+  dataModel: string,
+  apiSpec: string
+): Promise<Record<string, string>> {
+  logger.info('[SOLUTIONING] Executing Scrum Master Agent');
+
+  const agentConfig = configLoader.getSection('agents').scrummaster;
+  const prompt = buildPrompt(agentConfig.prompt_template, {
+    prd: prd,
+    dataModel: dataModel,
+    apiSpec: apiSpec
+  });
+
+  const response = await llmClient.generateCompletion(prompt);
+  const artifacts = parseArtifacts(response.content, ['epics.md', 'tasks.md']);
+
+  logger.info('[SOLUTIONING] Scrum Master Agent completed', { artifacts: Object.keys(artifacts) });
+  return artifacts;
+}
+
+/**
+ * Execute DevOps Agent (DEPENDENCIES phase)
+ * Generates: DEPENDENCIES.md, dependency-proposal.md
+ */
+async function executeDevOpsAgent(
+  llmClient: GeminiClient,
+  configLoader: ConfigLoader,
+  prd: string,
+  stackChoice: string = 'nextjs_only_expo'
+): Promise<Record<string, string>> {
+  logger.info('[DEPENDENCIES] Executing DevOps Agent');
+
+  const agentConfig = configLoader.getSection('agents').devops;
+  const prompt = buildPrompt(agentConfig.prompt_template, {
+    prd: prd,
+    stackChoice: stackChoice
+  });
+
+  const response = await llmClient.generateCompletion(prompt);
+  const artifacts = parseArtifacts(response.content, [
+    'DEPENDENCIES.md',
+    'dependency-proposal.md'
+  ]);
+
+  logger.info('[DEPENDENCIES] DevOps Agent completed', { artifacts: Object.keys(artifacts) });
+  return artifacts;
+}
+
+// ============================================================================
+// EXPORTED WRAPPER FUNCTIONS FOR ORCHESTRATOR
+// ============================================================================
+// These are called directly by OrchestratorEngine
+// They create ConfigLoader locally (before any awaits) to avoid context loss
 
 export async function getAnalystExecutor(
   llmClient: GeminiClient,
   projectId: string,
   artifacts: Record<string, string>
 ): Promise<Record<string, string>> {
-  const executor = new AgentExecutor();
+  const configLoader = new ConfigLoader();
   const projectIdea = artifacts['project_idea'] || 'Project for analysis';
-  const result = await executor.runAnalystAgent(projectIdea, {
-    project_id: projectId,
-    phase: 'ANALYSIS',
-    artifacts
-  });
-  return result.artifacts;
+  return executeAnalystAgent(llmClient, configLoader, projectIdea);
 }
 
 export async function getPMExecutor(
@@ -331,31 +288,22 @@ export async function getPMExecutor(
   artifacts: Record<string, string>,
   stackChoice?: string
 ): Promise<Record<string, string>> {
-  const executor = new AgentExecutor();
+  const configLoader = new ConfigLoader();
   const brief = artifacts['ANALYSIS/project-brief.md'] || '';
   const personas = artifacts['ANALYSIS/personas.md'] || '';
-  const result = await executor.runPMAgent(brief, personas, {
-    project_id: projectId,
-    phase: 'SPEC',
-    artifacts
-  });
-  return result.artifacts;
+  return executePMAgent(llmClient, configLoader, brief, personas);
 }
 
 export async function getArchitectExecutor(
   llmClient: GeminiClient,
   projectId: string,
-  artifacts: Record<string, string>
+  artifacts: Record<string, string>,
+  phase: 'SPEC' | 'SOLUTIONING' = 'SOLUTIONING'
 ): Promise<Record<string, string>> {
-  const executor = new AgentExecutor();
+  const configLoader = new ConfigLoader();
   const brief = artifacts['ANALYSIS/project-brief.md'] || '';
   const prd = artifacts['SPEC/PRD.md'] || '';
-  const result = await executor.runArchitectAgent(brief, {
-    project_id: projectId,
-    phase: 'SOLUTIONING',
-    artifacts
-  }, prd);
-  return result.artifacts;
+  return executeArchitectAgent(llmClient, configLoader, phase, brief, prd);
 }
 
 export async function getScruMasterExecutor(
@@ -363,17 +311,11 @@ export async function getScruMasterExecutor(
   projectId: string,
   artifacts: Record<string, string>
 ): Promise<Record<string, string>> {
-  const executor = new AgentExecutor();
+  const configLoader = new ConfigLoader();
   const prd = artifacts['SPEC/PRD.md'] || '';
-  const architecture = artifacts['SOLUTIONING/architecture.md'] || '';
   const dataModel = artifacts['SPEC/data-model.md'] || '';
   const apiSpec = artifacts['SPEC/api-spec.json'] || '';
-  const result = await executor.runScrumMasterAgent(prd, architecture, dataModel, apiSpec, {
-    project_id: projectId,
-    phase: 'SOLUTIONING',
-    artifacts
-  });
-  return result.artifacts;
+  return executeScrumMasterAgent(llmClient, configLoader, prd, dataModel, apiSpec);
 }
 
 export async function getDevOpsExecutor(
@@ -382,12 +324,7 @@ export async function getDevOpsExecutor(
   artifacts: Record<string, string>,
   stackChoice?: string
 ): Promise<Record<string, string>> {
-  const executor = new AgentExecutor();
+  const configLoader = new ConfigLoader();
   const prd = artifacts['SPEC/PRD.md'] || '';
-  const result = await executor.runDevOpsAgent(prd, stackChoice || 'nextjs_only_expo', {
-    project_id: projectId,
-    phase: 'DEPENDENCIES',
-    artifacts
-  });
-  return result.artifacts;
+  return executeDevOpsAgent(llmClient, configLoader, prd, stackChoice || 'nextjs_only_expo');
 }
