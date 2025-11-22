@@ -204,7 +204,17 @@ export class OrchestratorEngine {
     const spec = new ConfigLoader().loadSpec();
     const validators = new Validators(spec.validators);
     const artifactManager = new ArtifactManager();
-    const llmClient = this.llmClient;
+
+    // Create GeminiClient locally to avoid context loss (don't use this.llmClient)
+    const llmConfig = {
+      provider: spec.llm_config.provider as string,
+      model: spec.llm_config.model as string,
+      max_tokens: spec.llm_config.max_tokens as number,
+      temperature: spec.llm_config.temperature as number,
+      timeout_seconds: spec.llm_config.timeout_seconds as number,
+      api_key: process.env.GEMINI_API_KEY
+    };
+    const llmClient = new GeminiClient(llmConfig as any);
 
     // Validate spec is loaded
     if (!spec || !spec.phases) {
