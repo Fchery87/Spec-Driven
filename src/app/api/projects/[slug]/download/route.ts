@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getProjectMetadata, listArtifacts, readArtifact } from '@/app/api/lib/project-utils';
 import archiver from 'archiver';
-import { readFileSync } from 'fs';
-import { resolve as pathResolve } from 'path';
 import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
