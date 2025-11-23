@@ -140,20 +140,36 @@ export const writeArtifact = async (slug: string, phase: string, name: string, c
       const key = await uploadToR2(slug, phase, name, content, {
         contentType: 'application/octet-stream',
       });
+      logger.debug('Artifact saved to R2', { slug, phase, name, key });
       return key;
-    } catch {
-      logger.debug('Failed to write artifact to R2, trying local file system', { slug, phase, name });
+    } catch (r2Error) {
+      const err = r2Error instanceof Error ? r2Error : new Error(String(r2Error));
+      logger.warn('Failed to write artifact to R2, trying local file system', {
+        slug,
+        phase,
+        name,
+        r2Error: err.message
+      });
     }
+  } else {
+    logger.debug('R2 not configured, using local filesystem for artifacts', { slug, phase, name });
   }
 
   // Fallback to local file system
-  const dir = resolve(getProjectsPath(), slug, 'specs', phase, 'v1');
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
+  try {
+    const dir = resolve(getProjectsPath(), slug, 'specs', phase, 'v1');
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+    const path = resolve(dir, name);
+    writeFileSync(path, content, 'utf8');
+    logger.debug('Artifact saved to local filesystem', { slug, phase, name, path });
+    return path;
+  } catch (fsError) {
+    const err = fsError instanceof Error ? fsError : new Error(String(fsError));
+    logger.error('Failed to save artifact to both R2 and filesystem', err, { slug, phase, name });
+    throw err;
   }
-  const path = resolve(dir, name);
-  writeFileSync(path, content, 'utf8');
-  return path;
 };
 
 /**

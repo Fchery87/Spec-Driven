@@ -148,12 +148,27 @@ const executePhaseHandler = withAuth(
     const dbService = new ProjectDBService();
     const dbProject = await dbService.getProjectBySlug(slug);
 
+    logger.debug('Orchestrator result artifacts', {
+      project: slug,
+      phase: metadata.current_phase,
+      artifactKeys: Object.keys(result.artifacts),
+      artifactCount: Object.keys(result.artifacts).length,
+    });
+
     if (dbProject) {
       try {
         // Persist all generated artifacts to R2 and database
         for (const [key, content] of Object.entries(result.artifacts)) {
           // Extract filename from key (e.g., "ANALYSIS/analysis_report.md" -> "analysis_report.md")
           const filename = key.split('/').pop() || key;
+
+          logger.debug('Saving artifact', {
+            project: slug,
+            phase: metadata.current_phase,
+            key,
+            filename,
+            contentLength: content.length,
+          });
 
           // Save to R2 (with local filesystem fallback)
           await writeArtifact(slug, metadata.current_phase, filename, content);
