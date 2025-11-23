@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getProjectMetadata } from '@/app/api/lib/project-utils';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { getProjectMetadata, readArtifact } from '@/app/api/lib/project-utils';
 import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -13,7 +11,7 @@ export async function GET(
   try {
     const { slug, phase, name } = params;
 
-    const metadata = getProjectMetadata(slug);
+    const metadata = await getProjectMetadata(slug);
 
     if (!metadata) {
       return NextResponse.json(
@@ -22,12 +20,9 @@ export async function GET(
       );
     }
 
-    // Construct the artifact file path
-    const artifactPath = resolve(process.cwd(), 'projects', slug, 'specs', phase, 'v1', name);
-
-    // Read the artifact file
+    // Read the artifact from R2 or local filesystem
     try {
-      const content = readFileSync(artifactPath, 'utf8');
+      const content = await readArtifact(slug, phase, name);
 
       // Determine content type based on file extension
       let contentType = 'text/plain';

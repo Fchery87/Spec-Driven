@@ -134,6 +134,8 @@ export const listArtifacts = async (slug: string, phase: string) => {
  * Write artifact to R2 or file system
  */
 export const writeArtifact = async (slug: string, phase: string, name: string, content: string) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+
   // Try R2 first if configured
   if (process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_ACCESS_KEY_ID) {
     try {
@@ -144,18 +146,26 @@ export const writeArtifact = async (slug: string, phase: string, name: string, c
       return key;
     } catch (r2Error) {
       const err = r2Error instanceof Error ? r2Error : new Error(String(r2Error));
-      logger.warn('Failed to write artifact to R2, trying local file system', {
+      logger.error('Failed to write artifact to R2', err, {
         slug,
         phase,
         name,
         r2Error: err.message
       });
+
+      // In production (Vercel), fail fast - don't fall back to ephemeral filesystem
+      if (isProduction) {
+        throw new Error(`Failed to save artifact to R2: ${err.message}`);
+      }
+
+      // In development, try local filesystem fallback
+      logger.warn('Falling back to local filesystem for artifact', { slug, phase, name });
     }
   } else {
     logger.debug('R2 not configured, using local filesystem for artifacts', { slug, phase, name });
   }
 
-  // Fallback to local file system
+  // Fallback to local file system (development only, or when R2 not configured)
   try {
     const dir = resolve(getProjectsPath(), slug, 'specs', phase, 'v1');
     if (!existsSync(dir)) {

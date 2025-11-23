@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getProjectMetadata, saveProjectMetadata, listArtifacts, persistProjectToDB, writeArtifact } from '@/app/api/lib/project-utils';
+import { getProjectMetadata, saveProjectMetadata, listArtifacts, persistProjectToDB, writeArtifact, readArtifact } from '@/app/api/lib/project-utils';
 import { OrchestratorEngine } from '@/backend/services/orchestrator/orchestrator_engine';
 import { ProjectDBService } from '@/backend/services/database/drizzle_project_db_service';
-import { readFileSync, existsSync } from 'fs';
-import { resolve } from 'path';
 import { logger } from '@/lib/logger';
 import { getCorrelationId } from '@/lib/correlation-id';
 import { withAuth, type AuthSession } from '@/app/api/middleware/auth-guard';
@@ -59,13 +57,12 @@ const executePhaseHandler = withAuth(
     const allPhases = ['ANALYSIS', 'STACK_SELECTION', 'SPEC', 'DEPENDENCIES', 'SOLUTIONING', 'DONE'];
     const currentIndex = allPhases.indexOf(metadata.current_phase);
 
-    // Helper to read artifact file content
+    // Read artifact content from R2 or filesystem for all completed phases
     for (let i = 0; i < currentIndex; i++) {
       const phaseArtifacts = await listArtifacts(slug, allPhases[i]);
       for (const artifact of phaseArtifacts) {
         try {
-          const artifactPath = resolve(process.cwd(), 'projects', slug, 'specs', allPhases[i], 'v1', artifact.name);
-          const content = readFileSync(artifactPath, 'utf8');
+          const content = await readArtifact(slug, allPhases[i], artifact.name);
           previousArtifacts[`${allPhases[i]}/${artifact.name}`] = content;
         } catch (err) {
           logger.warn(`Failed to read artifact for context: ${err instanceof Error ? err.message : String(err)}`, {
@@ -78,13 +75,13 @@ const executePhaseHandler = withAuth(
       }
     }
 
-    // Add project idea for ANALYSIS phase
+    // Add project idea for ANALYSIS phase (read from R2 if available, fallback to metadata)
     if (metadata.current_phase === 'ANALYSIS') {
-      const projectIdeaPath = resolve(process.cwd(), 'projects', slug, 'project_idea.txt');
-      if (existsSync(projectIdeaPath)) {
-        previousArtifacts['project_idea'] = readFileSync(projectIdeaPath, 'utf8');
-      } else {
-        // Fallback to description or name
+      try {
+        const projectIdea = await readArtifact(slug, 'metadata', 'project_idea.txt');
+        previousArtifacts['project_idea'] = projectIdea;
+      } catch {
+        // Fallback to description or name if project_idea not in R2
         previousArtifacts['project_idea'] = metadata.description || metadata.name;
       }
     }
