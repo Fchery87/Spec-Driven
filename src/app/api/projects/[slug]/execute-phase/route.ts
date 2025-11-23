@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getProjectMetadata, saveProjectMetadata, listArtifacts, persistProjectToDB, writeArtifact, readArtifact } from '@/app/api/lib/project-utils';
 import { OrchestratorEngine } from '@/backend/services/orchestrator/orchestrator_engine';
 import { ProjectDBService } from '@/backend/services/database/drizzle_project_db_service';
+import { resolve } from 'path';
 import { logger } from '@/lib/logger';
 import { getCorrelationId } from '@/lib/correlation-id';
 import { withAuth, type AuthSession } from '@/app/api/middleware/auth-guard';
