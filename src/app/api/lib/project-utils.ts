@@ -53,8 +53,37 @@ export const getProjectMetadata = async (slug: string) => {
       return JSON.parse(readFileSync(path, 'utf8'));
     }
   } catch {
-    return null;
+    // ignore and fall through to DB lookup
   }
+
+  // Last resort: pull metadata from database so routes don't 404 if R2/local files are missing
+  try {
+    const { ProjectDBService } = await import('@/backend/services/database/drizzle_project_db_service');
+    const dbService = new ProjectDBService();
+    const project = await dbService.getProjectBySlug(slug);
+    if (project) {
+      return {
+        id: project.id,
+        slug: project.slug,
+        name: project.name,
+        description: project.description,
+        current_phase: project.currentPhase,
+        phases_completed: project.phasesCompleted,
+        stack_choice: project.stackChoice,
+        stack_approved: project.stackApproved,
+        dependencies_approved: project.dependenciesApproved,
+        handoff_generated: project.handoffGenerated,
+        handoff_generated_at: project.handoffGeneratedAt?.toISOString?.(),
+        orchestration_state: project.orchestrationState || { artifact_versions: {}, phase_history: [], approval_gates: {} },
+        created_at: project.createdAt?.toISOString?.(),
+        updated_at: project.updatedAt?.toISOString?.()
+      } satisfies ProjectMetadata;
+    }
+  } catch (dbError) {
+    logger.debug('Failed to load project metadata from database', { slug, error: dbError instanceof Error ? dbError.message : String(dbError) });
+  }
+
+  return null;
 };
 
 /**
@@ -118,7 +147,22 @@ export const listArtifacts = async (slug: string, phase: string) => {
   // Fallback to local file system
   const phasePath = resolve(getProjectsPath(), slug, 'specs', phase, 'v1');
   if (!existsSync(phasePath)) {
-    return [];
+    // Try database as a final fallback so UI can still show artifacts
+    try {
+      const { ProjectDBService } = await import('@/backend/services/database/drizzle_project_db_service');
+      const dbService = new ProjectDBService();
+      const project = await dbService.getProjectBySlug(slug);
+      if (!project) return [];
+
+      const dbArtifacts = await dbService.getArtifactsByPhase(project.id, phase);
+      return dbArtifacts.map((artifact: { filename: string; content: string | null }) => ({
+        name: artifact.filename,
+        size: artifact.content ? Buffer.byteLength(artifact.content, 'utf8') : 0
+      }));
+    } catch (dbError) {
+      logger.debug('Failed to list artifacts from database fallback', { slug, phase, error: dbError instanceof Error ? dbError.message : String(dbError) });
+      return [];
+    }
   }
   try {
     return readdirSync(phasePath).map(name => ({
@@ -219,8 +263,33 @@ export const readArtifact = async (slug: string, phase: string, name: string): P
     logger.debug('Artifact read from local filesystem', { slug, phase, name, path });
     return readFileSync(path, 'utf-8');
   } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
-    logger.error(`Error reading artifact from file system:`, err, { slug, phase, name });
+    logger.debug('Failed to read artifact from filesystem, trying database', {
+      slug,
+      phase,
+      name,
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+
+  // Fallback to database content (latest version)
+  try {
+    const { ProjectDBService } = await import('@/backend/services/database/drizzle_project_db_service');
+    const dbService = new ProjectDBService();
+    const project = await dbService.getProjectBySlug(slug);
+    if (!project) {
+      throw new Error('Project not found in database');
+    }
+
+    const dbArtifacts = await dbService.getArtifactsByPhase(project.id, phase);
+    const latest = dbArtifacts.find((a: { filename: string }) => a.filename === name);
+    if (!latest || !latest.content) {
+      throw new Error('Artifact not found in database');
+    }
+
+    return latest.content;
+  } catch (dbError) {
+    const err = dbError instanceof Error ? dbError : new Error(String(dbError));
+    logger.error(`Error reading artifact from all sources`, err, { slug, phase, name });
     throw err;
   }
 };
