@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { DependencySelector, type DependencySelection } from '@/components/orchestration/DependencySelector';
 
 describe('DependencySelector Component', () => {
@@ -33,6 +34,7 @@ describe('DependencySelector Component', () => {
 
   describe('Web Platform Dependencies', () => {
     it('should display web dependency options', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const user = userEvent.setup();
       render(
         <DependencySelector onApprove={mockOnApprove} />

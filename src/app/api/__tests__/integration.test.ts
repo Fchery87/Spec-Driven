@@ -68,11 +68,17 @@ describe('Integration: Auth → Validation → DB Flow', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (getRateLimitKey as any).mockReturnValue('test-key');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (generalLimiter.isAllowed as any).mockResolvedValue(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (withCorrelationId as any).mockImplementation((fn: (req: NextRequest) => Promise<Response>) => fn);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (withAuth as any).mockImplementation(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (handler: (req: NextRequest, context: any, session: any) => Promise<Response>) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         async (req: NextRequest, context?: any) => handler(req, context, mockSession)
     );
   });
@@ -80,12 +86,17 @@ describe('Integration: Auth → Validation → DB Flow', () => {
   describe('Complete Flow: Create Project → Validate Input → Persist to Database', () => {
     it('should complete full flow from authenticated request to database persistence', async () => {
       // Setup mocks for database operations
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ProjectDBService.prototype.createProject as any).mockResolvedValue({
         ...mockProjectData,
         name: 'My New Project',
         slug: 'my-new-project-abc123'
       });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.saveProjectMetadata as any).mockImplementation(() => {});
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.persistProjectToDB as any).mockResolvedValue(undefined);
 
       // Step 1: Make authenticated request with valid data
@@ -123,7 +134,9 @@ describe('Integration: Auth → Validation → DB Flow', () => {
 
     it('should reject unauthenticated requests at auth layer', async () => {
       // Create a mock auth guard that returns 401
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (withAuth as any).mockImplementation(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
         (handler: (req: NextRequest, context: any, session: any) => Promise<Response>) =>
           async () => {
             const response = new Response(
@@ -193,6 +206,7 @@ describe('Integration: Auth → Validation → DB Flow', () => {
     });
 
     it('should handle database errors gracefully after validation passes', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ProjectDBService.prototype.createProject as any).mockRejectedValue(
         new Error('Database connection failed')
       );
@@ -218,11 +232,19 @@ describe('Integration: Auth → Validation → DB Flow', () => {
 
   describe('Complete Flow: Approval → Validation → Artifact Persistence', () => {
     it('should complete approval flow with artifact persistence to database', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.getProjectMetadata as any).mockReturnValue(mockMetadata);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.saveProjectMetadata as any).mockImplementation(() => {});
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.persistProjectToDB as any).mockResolvedValue(undefined);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.writeArtifact as any).mockImplementation(() => {});
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ProjectDBService.prototype.getProjectBySlug as any).mockResolvedValue(mockProjectData);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ProjectDBService.prototype.saveArtifact as any).mockResolvedValue(undefined);
 
       const request = new NextRequest(
@@ -295,11 +317,19 @@ describe('Integration: Auth → Validation → DB Flow', () => {
     });
 
     it('should handle database failures gracefully during artifact persistence', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.getProjectMetadata as any).mockReturnValue(mockMetadata);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.saveProjectMetadata as any).mockImplementation(() => {});
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.persistProjectToDB as any).mockResolvedValue(undefined);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.writeArtifact as any).mockImplementation(() => {});
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ProjectDBService.prototype.getProjectBySlug as any).mockResolvedValue(mockProjectData);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ProjectDBService.prototype.saveArtifact as any).mockRejectedValue(
         new Error('Database error')
       );
@@ -335,7 +365,11 @@ describe('Integration: Auth → Validation → DB Flow', () => {
   describe('Authentication & Authorization', () => {
     it('should include user ID in logged operations for audit trail', async () => {
       (ProjectDBService.prototype.createProject as any).mockResolvedValue(mockProjectData);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.saveProjectMetadata as any).mockImplementation(() => {});
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.persistProjectToDB as any).mockResolvedValue(undefined);
 
       const request = new NextRequest(new URL('http://localhost:3000/api/projects'), {
@@ -358,7 +392,11 @@ describe('Integration: Auth → Validation → DB Flow', () => {
 
     it('should maintain session information throughout request lifecycle', async () => {
       (ProjectDBService.prototype.createProject as any).mockResolvedValue(mockProjectData);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.saveProjectMetadata as any).mockImplementation(() => {});
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.persistProjectToDB as any).mockResolvedValue(undefined);
 
       const request = new NextRequest(new URL('http://localhost:3000/api/projects'), {
@@ -422,7 +460,11 @@ describe('Integration: Auth → Validation → DB Flow', () => {
     it('should call database service with validated data', async () => {
       const createProjectSpy = vi.spyOn(ProjectDBService.prototype, 'createProject');
       (ProjectDBService.prototype.createProject as any).mockResolvedValue(mockProjectData);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.saveProjectMetadata as any).mockImplementation(() => {});
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.persistProjectToDB as any).mockResolvedValue(undefined);
 
       const request = new NextRequest(new URL('http://localhost:3000/api/projects'), {
@@ -448,6 +490,7 @@ describe('Integration: Auth → Validation → DB Flow', () => {
       const saveSpy = vi.spyOn(projectUtils, 'saveProjectMetadata');
 
       (ProjectDBService.prototype.createProject as any).mockResolvedValue(mockProjectData);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.persistProjectToDB as any).mockResolvedValue(undefined);
 
       const request = new NextRequest(new URL('http://localhost:3000/api/projects'), {

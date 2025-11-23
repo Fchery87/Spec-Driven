@@ -66,10 +66,12 @@ export async function requireAuth(request: NextRequest) {
 export function withAuth(
   handler: (
     request: NextRequest,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     context: any,
     session: AuthSession
   ) => Promise<Response | NextResponse>
 ): (request: NextRequest, context: any) => Promise<Response | NextResponse> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return async (request: NextRequest, context: any) => {
     const session = await requireAuth(request);
 

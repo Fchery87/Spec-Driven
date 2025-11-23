@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StackSelection } from '@/components/orchestration/StackSelection';
@@ -430,6 +431,7 @@ describe('StackSelection Component', () => {
   describe('Clear Selection', () => {
     it('should clear selection when clear button clicked', async () => {
       const user = userEvent.setup();
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { rerender } = render(
         <StackSelection
           selectedStack="nextjs_only_web"

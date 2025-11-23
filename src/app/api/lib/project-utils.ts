@@ -5,8 +5,10 @@ import {
   uploadToR2,
   downloadFromR2,
   listR2Artifacts,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   deleteFromR2,
   uploadProjectMetadata as uploadMetadataToR2,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   uploadProjectIdea as uploadIdeaToR2,
 } from '@/lib/r2-storage';
 
@@ -39,7 +41,7 @@ export const getProjectMetadata = async (slug: string) => {
     try {
       const buffer = await downloadFromR2(slug, 'metadata', 'metadata.json');
       return JSON.parse(buffer.toString('utf-8'));
-    } catch (error) {
+    } catch {
       logger.debug('Failed to get project metadata from R2, trying local file system', { slug });
     }
   }
@@ -65,7 +67,7 @@ export const saveProjectMetadata = async (slug: string, metadata: ProjectMetadat
     try {
       await uploadMetadataToR2(slug, metadata);
       return;
-    } catch (error) {
+    } catch {
       logger.debug('Failed to save project metadata to R2, trying local file system', { slug });
     }
   }
@@ -108,7 +110,7 @@ export const listArtifacts = async (slug: string, phase: string) => {
         name: artifact.name,
         size: artifact.size,
       }));
-    } catch (error) {
+    } catch {
       logger.debug('Failed to list artifacts from R2, trying local file system', { slug, phase });
     }
   }
@@ -139,7 +141,7 @@ export const writeArtifact = async (slug: string, phase: string, name: string, c
         contentType: 'application/octet-stream',
       });
       return key;
-    } catch (error) {
+    } catch {
       logger.debug('Failed to write artifact to R2, trying local file system', { slug, phase, name });
     }
   }
@@ -171,7 +173,7 @@ export const readArtifact = async (slug: string, phase: string, name: string): P
     try {
       const buffer = await downloadFromR2(slug, phase, name);
       return buffer.toString('utf-8');
-    } catch (error) {
+    } catch {
       logger.debug('Failed to read artifact from R2, trying local file system', { slug, phase, name });
     }
   }

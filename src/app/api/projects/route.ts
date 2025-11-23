@@ -73,6 +73,7 @@ export const GET = withCorrelationId(async (request: NextRequest) => {
 const postHandler = withAuth(
   async (
     request: NextRequest,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     _context: any,
     session: AuthSession
   ) => {

@@ -55,17 +55,24 @@ describe('API Error Handling', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (getRateLimitKey as any).mockReturnValue('test-key');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (generalLimiter.isAllowed as any).mockResolvedValue(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (withCorrelationId as any).mockImplementation((fn: (req: NextRequest) => Promise<Response>) => fn);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (withAuth as any).mockImplementation(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (handler: (req: NextRequest, context: any, session: any) => Promise<Response>) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         async (req: NextRequest, context?: any) => handler(req, context, mockSession)
     );
   });
 
   describe('Database Connection Errors', () => {
     it('should handle database unavailability gracefully', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ProjectDBService.prototype.listProjects as any).mockRejectedValue(
         new Error('ECONNREFUSED: Connection refused')
       );
@@ -81,7 +88,9 @@ describe('API Error Handling', () => {
 
     it('should handle timeout errors from database', async () => {
       const timeoutError = new Error('Query timeout');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (timeoutError as any).code = 'ETIMEDOUT';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ProjectDBService.prototype.listProjects as any).mockRejectedValue(timeoutError);
 
       const request = new NextRequest(new URL('http://localhost:3000/api/projects'));
@@ -94,7 +103,9 @@ describe('API Error Handling', () => {
 
     it('should handle database constraint violations', async () => {
       const constraintError = new Error('UNIQUE constraint failed: projects.slug');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ProjectDBService.prototype.createProject as any).mockRejectedValue(constraintError);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.saveProjectMetadata as any).mockImplementation(() => {});
 
       const request = new NextRequest(new URL('http://localhost:3000/api/projects'), {
@@ -131,6 +142,7 @@ describe('API Error Handling', () => {
       });
 
       const response = await createProject(request, {});
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const json = await response.json();
 
       expect(response.status).toBe(400);
@@ -151,6 +163,7 @@ describe('API Error Handling', () => {
 
     it('should handle very long project names', async () => {
       const longName = 'a'.repeat(1000);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ProjectDBService.prototype.createProject as any).mockResolvedValue({
         id: 'test-id',
         slug: 'a-'.repeat(100).slice(0, 100),
@@ -158,6 +171,7 @@ describe('API Error Handling', () => {
         createdAt: new Date(),
         updatedAt: new Date()
       });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.saveProjectMetadata as any).mockImplementation(() => {});
 
       const request = new NextRequest(new URL('http://localhost:3000/api/projects'), {
@@ -172,6 +186,7 @@ describe('API Error Handling', () => {
 
     it('should handle special characters in project name', async () => {
       const specialName = 'Test Project!@#$%^&*()';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ProjectDBService.prototype.createProject as any).mockResolvedValue({
         id: 'test-id',
         slug: 'test-project-special-123',
@@ -179,6 +194,7 @@ describe('API Error Handling', () => {
         createdAt: new Date(),
         updatedAt: new Date()
       });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.saveProjectMetadata as any).mockImplementation(() => {});
 
       const request = new NextRequest(new URL('http://localhost:3000/api/projects'), {
@@ -194,6 +210,7 @@ describe('API Error Handling', () => {
 
   describe('Not Found Errors', () => {
     it('should return 404 for non-existent project GET', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.getProjectMetadata as any).mockReturnValue(null);
 
       const request = new NextRequest(new URL('http://localhost:3000/api/projects/nonexistent'));
@@ -206,6 +223,7 @@ describe('API Error Handling', () => {
     });
 
     it('should return 404 for non-existent project PUT', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.getProjectMetadata as any).mockReturnValue(null);
 
       const request = new NextRequest(new URL('http://localhost:3000/api/projects/nonexistent'), {
@@ -221,6 +239,7 @@ describe('API Error Handling', () => {
     });
 
     it('should return 404 for non-existent project DELETE', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.getProjectMetadata as any).mockReturnValue(null);
 
       const request = new NextRequest(new URL('http://localhost:3000/api/projects/nonexistent'), {
@@ -261,8 +280,11 @@ describe('API Error Handling', () => {
     });
 
     it('should handle filesystem deletion errors', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.getProjectMetadata as any).mockReturnValue(mockMetadata);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.deleteProjectFromDB as any).mockResolvedValue(undefined);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.deleteProject as any).mockImplementation(() => {
         throw new Error('ENOENT: No such file or directory');
       });
@@ -281,8 +303,11 @@ describe('API Error Handling', () => {
 
   describe('Rate Limiting', () => {
     it('should enforce rate limits on GET requests', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (generalLimiter.isAllowed as any).mockResolvedValue(false);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (generalLimiter.getRemainingPoints as any).mockReturnValue(0);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (createRateLimitResponse as any).mockReturnValue(
         new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429 })
       );
@@ -295,8 +320,11 @@ describe('API Error Handling', () => {
     });
 
     it('should enforce rate limits on POST requests', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (generalLimiter.isAllowed as any).mockResolvedValue(false);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (generalLimiter.getRemainingPoints as any).mockReturnValue(0);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (createRateLimitResponse as any).mockReturnValue(
         new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429 })
       );
@@ -312,8 +340,11 @@ describe('API Error Handling', () => {
     });
 
     it('should include rate limit headers in response', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (generalLimiter.isAllowed as any).mockResolvedValue(false);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (generalLimiter.getRemainingPoints as any).mockReturnValue(0);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (createRateLimitResponse as any).mockReturnValue(
         new Response(JSON.stringify({ error: 'Too many requests' }), {
           status: 429,
@@ -333,6 +364,7 @@ describe('API Error Handling', () => {
 
   describe('Concurrent Request Handling', () => {
     it('should handle multiple simultaneous GET requests', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ProjectDBService.prototype.listProjects as any).mockResolvedValue({
         projects: [mockMetadata],
         total: 1
@@ -414,6 +446,7 @@ describe('API Error Handling', () => {
 
   describe('Response Validation', () => {
     it('should always return success or error field', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ProjectDBService.prototype.listProjects as any).mockResolvedValue({
         projects: [],
         total: 0
@@ -427,6 +460,7 @@ describe('API Error Handling', () => {
     });
 
     it('should include proper HTTP status codes', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ProjectDBService.prototype.listProjects as any).mockResolvedValue({
         projects: [],
         total: 0
@@ -436,6 +470,7 @@ describe('API Error Handling', () => {
       const getResponse = await getProject(getRequest);
       expect(getResponse.status).toBe(200);
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ProjectDBService.prototype.createProject as any).mockResolvedValue({
         id: 'test',
         slug: 'test',
@@ -443,6 +478,7 @@ describe('API Error Handling', () => {
         createdAt: new Date(),
         updatedAt: new Date()
       });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.saveProjectMetadata as any).mockImplementation(() => {});
 
       const postRequest = new NextRequest(new URL('http://localhost:3000/api/projects'), {
@@ -454,6 +490,7 @@ describe('API Error Handling', () => {
     });
 
     it('should set cache control headers appropriately', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ProjectDBService.prototype.listProjects as any).mockResolvedValue({
         projects: [],
         total: 0
@@ -470,6 +507,7 @@ describe('API Error Handling', () => {
   describe('Data Sanitization', () => {
     it('should handle HTML injection attempts in project name', async () => {
       const injectionAttempt = '<script>alert("xss")</script>';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ProjectDBService.prototype.createProject as any).mockResolvedValue({
         id: 'test-id',
         slug: 'test-slug',
@@ -477,6 +515,7 @@ describe('API Error Handling', () => {
         createdAt: new Date(),
         updatedAt: new Date()
       });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.saveProjectMetadata as any).mockImplementation(() => {});
 
       const request = new NextRequest(new URL('http://localhost:3000/api/projects'), {
@@ -490,6 +529,7 @@ describe('API Error Handling', () => {
 
     it('should handle SQL injection attempts in project name', async () => {
       const injectionAttempt = "'; DROP TABLE projects; --";
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ProjectDBService.prototype.createProject as any).mockResolvedValue({
         id: 'test-id',
         slug: 'test-slug',
@@ -497,6 +537,7 @@ describe('API Error Handling', () => {
         createdAt: new Date(),
         updatedAt: new Date()
       });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (projectUtils.saveProjectMetadata as any).mockImplementation(() => {});
 
       const request = new NextRequest(new URL('http://localhost:3000/api/projects'), {
@@ -511,6 +552,7 @@ describe('API Error Handling', () => {
 
   describe('Logging and Observability', () => {
     it('should log successful operations', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ProjectDBService.prototype.listProjects as any).mockResolvedValue({
         projects: [],
         total: 0
@@ -523,6 +565,7 @@ describe('API Error Handling', () => {
     });
 
     it('should log error operations with details', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ProjectDBService.prototype.listProjects as any).mockRejectedValue(
         new Error('Test error')
       );
