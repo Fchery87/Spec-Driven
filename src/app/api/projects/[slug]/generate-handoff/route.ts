@@ -35,7 +35,7 @@ export async function POST(
 
     // Generate HANDOFF.md
     const generator = new HandoffGenerator();
-    const handoffContent = generator.generateHandoff(slug, metadata);
+    const handoffContent = await generator.generateHandoff(slug, metadata);
 
     // Save HANDOFF.md artifact
     await saveArtifact(slug, 'DONE', 'HANDOFF.md', handoffContent);

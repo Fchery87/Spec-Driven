@@ -10,7 +10,7 @@ import { resolve } from 'path';
  */
 export class HandoffGenerator {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  generateHandoff(slug: string, projectMetadata: Record<string, any>): string {
+  async generateHandoff(slug: string, projectMetadata: Record<string, any>): Promise<string> {
     const stackChoice = projectMetadata.stack_choice || 'custom';
     const name = projectMetadata.name || 'Unnamed Project';
 
@@ -19,7 +19,7 @@ export class HandoffGenerator {
     const artifacts: Record<string, string> = {};
 
     for (const phase of allPhases) {
-      const phaseArtifacts = listArtifacts(slug, phase);
+      const phaseArtifacts = await listArtifacts(slug, phase);
       for (const artifact of phaseArtifacts) {
         try {
           const artifactPath = resolve(process.cwd(), 'projects', slug, 'specs', phase, 'v1', artifact.name);
