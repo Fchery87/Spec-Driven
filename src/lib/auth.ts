@@ -29,7 +29,9 @@ export const auth = betterAuth({
   baseURL,
   // Configure ID generation to use proper UUID format for PostgreSQL
   advanced: {
-    generateId: () => randomUUID(),
+    database: {
+      generateId: () => randomUUID(),
+    },
   },
   emailAndPassword: {
     enabled: true,
