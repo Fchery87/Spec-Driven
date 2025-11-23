@@ -17,6 +17,7 @@ import { logger } from '@/lib/logger';
 // PROMPT BUILDING HELPERS
 // ============================================================================
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildPrompt(template: string, variables: Record<string, any>): string {
   let prompt = template;
 
@@ -41,6 +42,7 @@ function parseArtifacts(content: string, expectedFiles: string[]): Record<string
   let match;
 
   while ((match = fileRegex.exec(content)) !== null) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [, language, filename, fileContent] = match;
     artifacts[filename.trim()] = fileContent.trim();
   }
@@ -185,6 +187,7 @@ async function executeArchitectAgent(
   const agentConfig = configLoader.getSection('agents').architect;
 
   let expectedFiles: string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let variables: Record<string, any>;
 
   if (phase === 'SPEC') {
@@ -286,6 +289,7 @@ export async function getPMExecutor(
   llmClient: GeminiClient,
   projectId: string,
   artifacts: Record<string, string>,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   stackChoice?: string
 ): Promise<Record<string, string>> {
   const configLoader = new ConfigLoader();

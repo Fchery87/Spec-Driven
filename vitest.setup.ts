@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { expect, afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 

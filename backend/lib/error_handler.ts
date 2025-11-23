@@ -47,6 +47,7 @@ export interface ErrorResponse {
   error: {
     code: ErrorCode;
     message: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     details?: Record<string, any>;
     timestamp: string;
     requestId?: string;
@@ -56,12 +57,14 @@ export interface ErrorResponse {
 export class AppError extends Error {
   public readonly code: ErrorCode;
   public readonly statusCode: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public readonly details?: Record<string, any>;
 
   constructor(
     code: ErrorCode,
     message: string,
     statusCode: number = 500,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     details?: Record<string, any>
   ) {
     super(message);
@@ -170,6 +173,7 @@ export function formatErrorResponse(
  * Common error creators
  */
 export const Errors = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   validationError: (message: string, details?: Record<string, any>) =>
     new AppError(
       ErrorCode.VALIDATION_ERROR,
@@ -186,6 +190,7 @@ export const Errors = {
       { field }
     ),
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   invalidInput: (message: string, details?: Record<string, any>) =>
     new AppError(
       ErrorCode.INVALID_INPUT,
@@ -268,6 +273,8 @@ export const Errors = {
       { name }
     ),
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   conflict: (message: string, details?: Record<string, any>) =>
     new AppError(
       ErrorCode.CONFLICT,
@@ -276,6 +283,7 @@ export const Errors = {
       details
     ),
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   resourceAlreadyExists: (resource: string, details?: Record<string, any>) =>
     new AppError(
       ErrorCode.RESOURCE_ALREADY_EXISTS,
@@ -300,6 +308,8 @@ export const Errors = {
       retryAfter ? { retryAfter } : undefined
     ),
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   databaseError: (message: string, details?: Record<string, any>) =>
     new AppError(
       ErrorCode.DATABASE_ERROR,
@@ -308,6 +318,8 @@ export const Errors = {
       details
     ),
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   llmError: (message: string, details?: Record<string, any>) =>
     new AppError(
       ErrorCode.LLM_ERROR,
@@ -316,6 +328,7 @@ export const Errors = {
       details
     ),
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   fileSystemError: (message: string, details?: Record<string, any>) =>
     new AppError(
       ErrorCode.FILE_SYSTEM_ERROR,

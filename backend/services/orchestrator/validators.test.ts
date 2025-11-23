@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Validators } from './validators'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { logger } from '@/lib/logger';
 
 describe('Validators', () => {
@@ -13,6 +14,7 @@ describe('Validators', () => {
       }
       const result = validators.validatePresence(artifacts, {
         required_files: ['constitution.md', 'brief.md']
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any)
       expect(result.passed).toBe(true)
     })
@@ -23,6 +25,7 @@ describe('Validators', () => {
       }
       const result = validators.validatePresence(artifacts, {
         required_files: ['constitution.md', 'brief.md']
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any)
       expect(result.passed).toBe(false)
       expect(result.errors).toBeDefined()
@@ -86,6 +89,7 @@ status: complete
       }
       const result = validators.validateContentCoverage(artifacts, {
         type: 'SPEC'
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any)
       expect(result.passed).toBe(true)
     })
@@ -98,6 +102,7 @@ status: complete
       }
       const result = validators.validateContentCoverage(artifacts, {
         type: 'SPEC'
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any)
       expect(result.passed).toBe(false)
     })

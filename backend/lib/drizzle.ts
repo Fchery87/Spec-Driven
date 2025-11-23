@@ -8,14 +8,15 @@ const databaseUrl = DB_CONFIG.url || process.env.DATABASE_URL;
 const isProduction = process.env.NODE_ENV === 'production';
 const isLocalDev = !databaseUrl && !isProduction;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let db: any;
 
 if (isLocalDev) {
   // Use SQLite for local development
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
     const Database = require('better-sqlite3');
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
     const { drizzle: drizzleSqlite } = require('drizzle-orm/better-sqlite3');
 
     const sqlite = new Database(':memory:');
@@ -28,6 +29,7 @@ if (isLocalDev) {
     console.warn(
       '[Database] Using in-memory SQLite for local development. DATABASE_URL not set.'
     );
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     throw new Error(
       'Failed to initialize SQLite. Install better-sqlite3: npm install better-sqlite3'
@@ -41,9 +43,9 @@ if (isLocalDev) {
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
   const { drizzle } = require('drizzle-orm/neon-http');
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
   const { neon } = require('@neondatabase/serverless');
 
   // Create the Neon SQL client

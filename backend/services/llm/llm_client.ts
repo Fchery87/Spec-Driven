@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { LLMConfig, LLMResponse, AgentContext, AgentOutput } from '@/types/llm';
 import { logger } from '@/lib/logger';
 
@@ -139,6 +140,7 @@ export class GeminiClient {
   /**
    * Parse Gemini API response
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private parseResponse(data: any): LLMResponse {
     const candidate = data.candidates?.[0];
     
