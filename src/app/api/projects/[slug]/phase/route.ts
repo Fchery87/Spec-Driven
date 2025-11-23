@@ -37,7 +37,7 @@ export async function POST(
     }
 
     if (action === 'validate') {
-      const artifacts = listArtifacts(slug, metadata.current_phase);
+      const artifacts = await listArtifacts(slug, metadata.current_phase);
       const requiredFiles = getPhaseOutputs(metadata.current_phase);
       const hasAllFiles = requiredFiles.every(file =>
         artifacts.some(a => a.name === file)
@@ -84,7 +84,7 @@ export async function POST(
         updated_at: new Date().toISOString()
       };
 
-      saveProjectMetadata(slug, updated);
+      await saveProjectMetadata(slug, updated);
       await persistProjectToDB(slug, updated);
 
       return NextResponse.json({

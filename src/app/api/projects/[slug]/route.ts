@@ -66,7 +66,7 @@ export async function PUT(
       updated_at: new Date().toISOString()
     };
 
-    saveProjectMetadata(slug, updated);
+    await saveProjectMetadata(slug, updated);
 
     // Persist changes to database
     await persistProjectToDB(slug, updated);

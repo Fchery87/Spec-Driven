@@ -299,3 +299,4 @@ E2E_FAILURES_ANALYSIS.md
 SETUP_VERIFICATION.md
 .playwrightrc.example
 validate-e2e-setup.sh
+.vercel

@@ -77,8 +77,8 @@ See plan.md for the full rationale and decision documentation.
 `;
 
       // Write artifacts to filesystem
-      writeArtifact(slug, 'STACK_SELECTION', 'plan.md', stackContent);
-      writeArtifact(slug, 'STACK_SELECTION', 'README.md', readmeContent);
+      await writeArtifact(slug, 'STACK_SELECTION', 'plan.md', stackContent);
+      await writeArtifact(slug, 'STACK_SELECTION', 'README.md', readmeContent);
 
       // DB-primary: persist artifacts to database
       const dbService = new ProjectDBService();
@@ -123,7 +123,7 @@ See plan.md for the full rationale and decision documentation.
         updated_at: new Date().toISOString(),
       };
 
-      saveProjectMetadata(slug, updated);
+      await saveProjectMetadata(slug, updated);
       await persistProjectToDB(slug, updated);
 
       logger.info('Stack selection approved', {

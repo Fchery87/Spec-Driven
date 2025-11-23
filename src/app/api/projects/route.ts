@@ -158,7 +158,7 @@ const postHandler = withAuth(
         updated_at: dbProject.updatedAt.toISOString(),
         orchestration_state: dbProject.orchestrationState,
       };
-      saveProjectMetadata(slug, metadata);
+      await saveProjectMetadata(slug, metadata);
 
       logger.info('POST /api/projects - project created successfully', {
         slug,

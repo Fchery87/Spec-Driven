@@ -83,7 +83,7 @@ All project dependencies have been reviewed and approved. The project is now cle
 `;
 
       // Write artifact to filesystem
-      writeArtifact(slug, 'DEPENDENCIES', 'approval.md', approvalContent);
+      await writeArtifact(slug, 'DEPENDENCIES', 'approval.md', approvalContent);
 
       // DB-primary: persist artifact to database
       const dbService = new ProjectDBService();
@@ -123,7 +123,7 @@ All project dependencies have been reviewed and approved. The project is now cle
         updated_at: new Date().toISOString(),
       };
 
-      saveProjectMetadata(slug, updated);
+      await saveProjectMetadata(slug, updated);
       await persistProjectToDB(slug, updated);
 
       logger.info('Dependencies approved', {

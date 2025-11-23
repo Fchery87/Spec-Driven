@@ -1,6 +1,14 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, rmSync } from 'fs';
 import { resolve } from 'path';
 import { logger } from '@/lib/logger';
+import {
+  uploadToR2,
+  downloadFromR2,
+  listR2Artifacts,
+  deleteFromR2,
+  uploadProjectMetadata as uploadMetadataToR2,
+  uploadProjectIdea as uploadIdeaToR2,
+} from '@/lib/r2-storage';
 
 export interface ProjectMetadata {
   id?: string;
@@ -22,10 +30,21 @@ export interface ProjectMetadata {
 export const getProjectsPath = () => resolve(process.cwd(), 'projects');
 
 /**
- * Get project metadata from file system
- * Database persistence handled separately in async functions
+ * Get project metadata from R2 or local file system
+ * Tries R2 first if configured, falls back to local file system
  */
-export const getProjectMetadata = (slug: string) => {
+export const getProjectMetadata = async (slug: string) => {
+  // Try R2 first if configured
+  if (process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_ACCESS_KEY_ID) {
+    try {
+      const buffer = await downloadFromR2(slug, 'metadata', 'metadata.json');
+      return JSON.parse(buffer.toString('utf-8'));
+    } catch (error) {
+      logger.debug('Failed to get project metadata from R2, trying local file system', { slug });
+    }
+  }
+
+  // Fallback to local file system for development
   try {
     const path = resolve(getProjectsPath(), slug, 'metadata.json');
     if (existsSync(path)) {
@@ -37,10 +56,21 @@ export const getProjectMetadata = (slug: string) => {
 };
 
 /**
- * Save project metadata to file system
- * Database persistence handled separately in async functions
+ * Save project metadata to R2 or local file system
+ * Saves to R2 if configured, otherwise saves locally for development
  */
-export const saveProjectMetadata = (slug: string, metadata: ProjectMetadata) => {
+export const saveProjectMetadata = async (slug: string, metadata: ProjectMetadata) => {
+  // Try R2 first if configured
+  if (process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_ACCESS_KEY_ID) {
+    try {
+      await uploadMetadataToR2(slug, metadata);
+      return;
+    } catch (error) {
+      logger.debug('Failed to save project metadata to R2, trying local file system', { slug });
+    }
+  }
+
+  // Fallback to local file system for development
   const dir = resolve(getProjectsPath(), slug);
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
@@ -67,9 +97,23 @@ export const listAllProjects = () => {
 };
 
 /**
- * List artifacts for a phase (file system)
+ * List artifacts for a phase from R2 or local file system
  */
-export const listArtifacts = (slug: string, phase: string) => {
+export const listArtifacts = async (slug: string, phase: string) => {
+  // Try R2 first if configured
+  if (process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_ACCESS_KEY_ID) {
+    try {
+      const artifacts = await listR2Artifacts(slug, phase);
+      return artifacts.map(artifact => ({
+        name: artifact.name,
+        size: artifact.size,
+      }));
+    } catch (error) {
+      logger.debug('Failed to list artifacts from R2, trying local file system', { slug, phase });
+    }
+  }
+
+  // Fallback to local file system
   const phasePath = resolve(getProjectsPath(), slug, 'specs', phase, 'v1');
   if (!existsSync(phasePath)) {
     return [];
@@ -85,9 +129,22 @@ export const listArtifacts = (slug: string, phase: string) => {
 };
 
 /**
- * Write artifact to file system
+ * Write artifact to R2 or file system
  */
-export const writeArtifact = (slug: string, phase: string, name: string, content: string) => {
+export const writeArtifact = async (slug: string, phase: string, name: string, content: string) => {
+  // Try R2 first if configured
+  if (process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_ACCESS_KEY_ID) {
+    try {
+      const key = await uploadToR2(slug, phase, name, content, {
+        contentType: 'application/octet-stream',
+      });
+      return key;
+    } catch (error) {
+      logger.debug('Failed to write artifact to R2, trying local file system', { slug, phase, name });
+    }
+  }
+
+  // Fallback to local file system
   const dir = resolve(getProjectsPath(), slug, 'specs', phase, 'v1');
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
@@ -98,12 +155,36 @@ export const writeArtifact = (slug: string, phase: string, name: string, content
 };
 
 /**
- * Save artifact (file system only)
- * Note: Artifact content is stored in files for easy ZIPping
- * Database stores metadata only
+ * Save artifact to R2 or file system
+ * Wrapper around writeArtifact for compatibility
  */
-export const saveArtifact = (slug: string, phase: string, name: string, content: string): string => {
+export const saveArtifact = async (slug: string, phase: string, name: string, content: string): Promise<string> => {
   return writeArtifact(slug, phase, name, content);
+};
+
+/**
+ * Read artifact from R2 or file system
+ */
+export const readArtifact = async (slug: string, phase: string, name: string): Promise<string> => {
+  // Try R2 first if configured
+  if (process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_ACCESS_KEY_ID) {
+    try {
+      const buffer = await downloadFromR2(slug, phase, name);
+      return buffer.toString('utf-8');
+    } catch (error) {
+      logger.debug('Failed to read artifact from R2, trying local file system', { slug, phase, name });
+    }
+  }
+
+  // Fallback to local file system
+  try {
+    const path = resolve(getProjectsPath(), slug, 'specs', phase, 'v1', name);
+    return readFileSync(path, 'utf-8');
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error(`Error reading artifact from file system:`, err, { slug, phase, name });
+    throw err;
+  }
 };
 
 /**

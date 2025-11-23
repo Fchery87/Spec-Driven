@@ -59,7 +59,7 @@ const executePhaseHandler = withAuth(
 
     // Helper to read artifact file content
     for (let i = 0; i < currentIndex; i++) {
-      const phaseArtifacts = listArtifacts(slug, allPhases[i]);
+      const phaseArtifacts = await listArtifacts(slug, allPhases[i]);
       for (const artifact of phaseArtifacts) {
         try {
           const artifactPath = resolve(process.cwd(), 'projects', slug, 'specs', allPhases[i], 'v1', artifact.name);
@@ -188,7 +188,7 @@ const executePhaseHandler = withAuth(
       updated_at: new Date().toISOString()
     };
 
-    saveProjectMetadata(slug, updated);
+    await saveProjectMetadata(slug, updated);
 
     // Persist metadata to database
     await persistProjectToDB(slug, updated);

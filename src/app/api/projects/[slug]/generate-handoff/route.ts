@@ -38,7 +38,7 @@ export async function POST(
     const handoffContent = generator.generateHandoff(slug, metadata);
 
     // Save HANDOFF.md artifact
-    saveArtifact(slug, 'DONE', 'HANDOFF.md', handoffContent);
+    await saveArtifact(slug, 'DONE', 'HANDOFF.md', handoffContent);
 
     // Log artifact to database
     try {
@@ -61,7 +61,7 @@ export async function POST(
       updated_at: new Date().toISOString()
     };
 
-    saveProjectMetadata(slug, updated);
+    await saveProjectMetadata(slug, updated);
     await persistProjectToDB(slug, updated);
 
     return NextResponse.json({
