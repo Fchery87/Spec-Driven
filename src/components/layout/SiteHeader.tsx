@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { Menu, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { signOut, useSession } from "@/lib/auth-client"
@@ -24,6 +25,7 @@ interface SiteHeaderProps {
 export function SiteHeader({ className }: SiteHeaderProps) {
   const { data, isPending } = useSession()
   const [isSigningOut, setIsSigningOut] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const { logError } = useLogger("SiteHeader")
 
   const isAuthenticated = Boolean(data?.session)
@@ -37,6 +39,7 @@ export function SiteHeader({ className }: SiteHeaderProps) {
     try {
       setIsSigningOut(true)
       await signOut()
+      setMobileOpen(false)
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error))
       logError("Failed to sign out", err)
@@ -85,6 +88,7 @@ export function SiteHeader({ className }: SiteHeaderProps) {
                 variant="outline"
                 onClick={handleSignOut}
                 disabled={isSigningOut}
+                className="hidden md:inline-flex"
               >
                 {isSigningOut ? "Signing out..." : "Sign Out"}
               </Button>
@@ -94,13 +98,57 @@ export function SiteHeader({ className }: SiteHeaderProps) {
               <Button variant="ghost" size="sm" asChild className="hidden sm:flex">
                 <Link href="/sign-in">Sign In</Link>
               </Button>
-              <Button size="sm" className="shadow-sm" asChild>
+              <Button size="sm" className="shadow-sm hidden md:inline-flex" asChild>
                 <Link href="/sign-up">Create Account</Link>
               </Button>
             </>
           )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            aria-label="Toggle menu"
+            onClick={() => setMobileOpen((prev) => !prev)}
+          >
+            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
         </div>
       </div>
+
+      {mobileOpen && (
+        <div className="mx-auto block max-w-6xl border-t border-border/60 bg-background/95 px-4 py-4 md:hidden">
+          <div className="flex flex-col gap-3 text-sm">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="rounded-md px-2 py-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+                onClick={() => setMobileOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ))}
+            <div className="flex items-center justify-between border-t border-border/60 pt-3">
+              <span className="text-xs uppercase tracking-wide text-muted-foreground">Theme</span>
+              <ThemeToggle />
+            </div>
+            {isPending ? null : isAuthenticated ? (
+              <Button size="sm" variant="outline" onClick={handleSignOut} disabled={isSigningOut}>
+                {isSigningOut ? "Signing out..." : "Sign Out"}
+              </Button>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <Button size="sm" asChild onClick={() => setMobileOpen(false)}>
+                  <Link href="/sign-in">Sign In</Link>
+                </Button>
+                <Button size="sm" variant="outline" asChild onClick={() => setMobileOpen(false)}>
+                  <Link href="/sign-up">Create Account</Link>
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   )
 }

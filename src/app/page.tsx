@@ -189,14 +189,14 @@ export default function Home() {
             <p className="text-muted-foreground">
               Every project bundles PRDs, API schemas, dependency memos, and a final HANDOFF.md prompt. Preview the quality of content downstream teams receive.
             </p>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <Button onClick={() => setSampleOpen(true)}>See sample Spec</Button>
               <Button variant="outline" onClick={handleStartProject}>
                 Generate your own
               </Button>
             </div>
           </div>
-          <Card className="border border-border/60 bg-card/80 shadow-lg">
+          <Card className="border border-border/60 bg-card/80 shadow-lg w-full">
             <CardHeader>
               <CardTitle className="text-xl flex items-center gap-2">
                 <FileText className="h-5 w-5 text-primary" />
@@ -205,7 +205,7 @@ export default function Home() {
               <CardDescription>Excerpt from a completed HANDOFF bundle.</CardDescription>
             </CardHeader>
             <CardContent>
-              <pre className="max-h-72 overflow-auto rounded-lg bg-muted p-4 text-xs text-foreground">
+              <pre className="max-h-72 w-full overflow-auto rounded-lg bg-muted p-4 text-xs text-foreground whitespace-pre-wrap break-words">
                 {samplePreview}
               </pre>
             </CardContent>
