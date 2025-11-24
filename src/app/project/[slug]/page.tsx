@@ -105,16 +105,24 @@ export default function ProjectPage() {
 
   const fetchArtifacts = useCallback(async () => {
     try {
+      console.log('[fetchArtifacts] Starting fetch for slug:', slug);
       const response = await fetch(`/api/projects/${slug}/artifacts`, { cache: 'no-store' });
       const result = await response.json();
+      console.log('[fetchArtifacts] API response:', result);
 
       if (result.success) {
         // API returns: { artifacts: { ANALYSIS: [...], SPEC: [...], etc } }
         const allArtifacts = result.data.artifacts;
-        setArtifacts(allArtifacts);
+        console.log('[fetchArtifacts] Setting artifacts:', allArtifacts);
+        console.log('[fetchArtifacts] Artifact phases:', Object.keys(allArtifacts || {}));
+        console.log('[fetchArtifacts] Total artifacts:', Object.values(allArtifacts || {}).flat().length);
+        setArtifacts(allArtifacts || {});
+      } else {
+        console.error('[fetchArtifacts] API returned success: false', result);
       }
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
+      console.error('[fetchArtifacts] Error fetching artifacts:', error);
       logger.error('Failed to fetch artifacts:', error);
     }
   }, [slug]);
@@ -123,6 +131,14 @@ export default function ProjectPage() {
     fetchProject();
     fetchArtifacts();
   }, [fetchProject, fetchArtifacts]);
+
+  useEffect(() => {
+    console.log('[artifacts state changed]', {
+      phases: Object.keys(artifacts),
+      counts: Object.entries(artifacts).map(([phase, arts]) => `${phase}: ${arts.length}`),
+      total: Object.values(artifacts).flat().length
+    });
+  }, [artifacts]);
 
   useEffect(() => {
     if (showDependencySelector) {
