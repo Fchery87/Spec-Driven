@@ -10,11 +10,11 @@ export const runtime = 'nodejs';
 export const POST = withAuth(
   async (
     request: NextRequest,
-    { params }: { params: { slug: string } },
+    { params }: { params: Promise<{ slug: string }> },
     session: AuthSession
   ) => {
     try {
-      const { slug } = params;
+      const { slug } = await params;
       const body = await request.json();
 
       // Validate input with Zod schema

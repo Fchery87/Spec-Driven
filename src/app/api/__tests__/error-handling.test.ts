@@ -214,7 +214,7 @@ describe('API Error Handling', () => {
       (projectUtils.getProjectMetadata as any).mockReturnValue(null);
 
       const request = new NextRequest(new URL('http://localhost:3000/api/projects/nonexistent'));
-      const response = await getSingleProject(request, { params: { slug: 'nonexistent' } });
+      const response = await getSingleProject(request, { params: Promise.resolve({ slug: 'nonexistent' }) });
       const json = await response.json();
 
       expect(response.status).toBe(404);
@@ -231,7 +231,7 @@ describe('API Error Handling', () => {
         body: JSON.stringify({ name: 'Updated' })
       });
 
-      const response = await updateProject(request, { params: { slug: 'nonexistent' } });
+      const response = await updateProject(request, { params: Promise.resolve({ slug: 'nonexistent' }) });
       const json = await response.json();
 
       expect(response.status).toBe(404);
@@ -246,7 +246,7 @@ describe('API Error Handling', () => {
         method: 'DELETE'
       });
 
-      const response = await deleteProject(request, { params: { slug: 'nonexistent' } });
+      const response = await deleteProject(request, { params: Promise.resolve({ slug: 'nonexistent' }) });
       const json = await response.json();
 
       expect(response.status).toBe(404);
@@ -295,7 +295,7 @@ describe('API Error Handling', () => {
         method: 'DELETE'
       });
 
-      const response = await deleteProject(request, { params: { slug: 'test-slug' } });
+      const response = await deleteProject(request, { params: Promise.resolve({ slug: 'test-slug' }) });
       const json = await response.json();
 
       expect(response.status).toBe(500);

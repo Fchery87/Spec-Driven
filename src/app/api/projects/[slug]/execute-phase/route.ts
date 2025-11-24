@@ -16,12 +16,12 @@ const executePhaseHandler = withAuth(
   async (
     request: NextRequest,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    context: { params: { slug: string } },
+    context: { params: Promise<{ slug: string }> },
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     session: AuthSession
   ) => {
     try {
-      const { slug } = context.params;
+      const { slug } = await context.params;
 
       const metadata = await getProjectMetadata(slug);
 
@@ -223,8 +223,9 @@ const executePhaseHandler = withAuth(
       }
     });
     } catch (error) {
+      const { slug: errorSlug } = await context.params;
       logger.error('Error executing phase agent', error instanceof Error ? error : new Error(String(error)), {
-        project: context.params.slug,
+        project: errorSlug,
         correlationId: getCorrelationId(),
       });
       return NextResponse.json(

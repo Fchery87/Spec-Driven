@@ -329,7 +329,7 @@ describe('Projects API Routes', () => {
       (projectUtils.getProjectMetadata as any).mockReturnValue(mockMetadata);
 
       const request = new NextRequest(new URL('http://localhost:3000/api/projects/test-slug'));
-      const response = await getProject(request, { params: { slug: 'test-slug' } });
+      const response = await getProject(request, { params: Promise.resolve({ slug: 'test-slug' }) });
       const json = await response.json();
 
       expect(response.status).toBe(200);
@@ -343,7 +343,7 @@ describe('Projects API Routes', () => {
       (projectUtils.getProjectMetadata as any).mockReturnValue(null);
 
       const request = new NextRequest(new URL('http://localhost:3000/api/projects/missing-slug'));
-      const response = await getProject(request, { params: { slug: 'missing-slug' } });
+      const response = await getProject(request, { params: Promise.resolve({ slug: 'missing-slug' }) });
       const json = await response.json();
 
       expect(response.status).toBe(404);
@@ -356,7 +356,7 @@ describe('Projects API Routes', () => {
       (projectUtils.getProjectMetadata as any).mockReturnValue(mockMetadata);
 
       const request = new NextRequest(new URL('http://localhost:3000/api/projects/test-slug'));
-      const response = await getProject(request, { params: { slug: 'test-slug' } });
+      const response = await getProject(request, { params: Promise.resolve({ slug: 'test-slug' }) });
       const json = await response.json();
 
       expect(json.data.stats).toBeDefined();
@@ -388,7 +388,7 @@ describe('Projects API Routes', () => {
         })
       });
 
-      const response = await updateProject(request, { params: { slug: 'test-slug' } });
+      const response = await updateProject(request, { params: Promise.resolve({ slug: 'test-slug' }) });
       const json = await response.json();
 
       expect(response.status).toBe(200);
@@ -408,7 +408,7 @@ describe('Projects API Routes', () => {
         })
       });
 
-      const response = await updateProject(request, { params: { slug: 'missing-slug' } });
+      const response = await updateProject(request, { params: Promise.resolve({ slug: 'missing-slug' }) });
       const json = await response.json();
 
       expect(response.status).toBe(404);
@@ -430,7 +430,7 @@ describe('Projects API Routes', () => {
         })
       });
 
-      await updateProject(request, { params: { slug: 'test-slug' } });
+      await updateProject(request, { params: Promise.resolve({ slug: 'test-slug' }) });
 
       expect(persistSpy).toHaveBeenCalled();
     });
@@ -449,7 +449,7 @@ describe('Projects API Routes', () => {
         })
       });
 
-      await updateProject(request, { params: { slug: 'test-slug' } });
+      await updateProject(request, { params: Promise.resolve({ slug: 'test-slug' }) });
 
       expect(saveSpy).toHaveBeenCalledWith(
         'test-slug',
@@ -473,7 +473,7 @@ describe('Projects API Routes', () => {
         method: 'DELETE'
       });
 
-      const response = await deleteProject(request, { params: { slug: 'test-slug' } });
+      const response = await deleteProject(request, { params: Promise.resolve({ slug: 'test-slug' }) });
       const json = await response.json();
 
       expect(response.status).toBe(200);
@@ -489,7 +489,7 @@ describe('Projects API Routes', () => {
         method: 'DELETE'
       });
 
-      const response = await deleteProject(request, { params: { slug: 'missing-slug' } });
+      const response = await deleteProject(request, { params: Promise.resolve({ slug: 'missing-slug' }) });
       const json = await response.json();
 
       expect(response.status).toBe(404);
@@ -508,7 +508,7 @@ describe('Projects API Routes', () => {
         method: 'DELETE'
       });
 
-      await deleteProject(request, { params: { slug: 'test-slug' } });
+      await deleteProject(request, { params: Promise.resolve({ slug: 'test-slug' }) });
 
       expect(deleteDBSpy).toHaveBeenCalledWith('test-slug');
     });
@@ -524,7 +524,7 @@ describe('Projects API Routes', () => {
         method: 'DELETE'
       });
 
-      await deleteProject(request, { params: { slug: 'test-slug' } });
+      await deleteProject(request, { params: Promise.resolve({ slug: 'test-slug' }) });
 
       expect(deleteSpy).toHaveBeenCalledWith('test-slug');
     });
@@ -541,7 +541,7 @@ describe('Projects API Routes', () => {
         method: 'DELETE'
       });
 
-      const response = await deleteProject(request, { params: { slug: 'test-slug' } });
+      const response = await deleteProject(request, { params: Promise.resolve({ slug: 'test-slug' }) });
       const json = await response.json();
 
       expect(response.status).toBe(500);
@@ -561,7 +561,7 @@ describe('Projects API Routes', () => {
         method: 'DELETE'
       });
 
-      const response = await deleteProject(request, { params: { slug: 'test-slug' } });
+      const response = await deleteProject(request, { params: Promise.resolve({ slug: 'test-slug' }) });
       const json = await response.json();
 
       expect(response.status).toBe(500);
@@ -593,7 +593,7 @@ describe('Projects API Routes', () => {
         })
       });
 
-      const response = await approveStack(request, { params: { slug: 'test-slug' } });
+      const response = await approveStack(request, { params: Promise.resolve({ slug: 'test-slug' }) });
       const json = await response.json();
 
       expect(response.status).toBe(200);
@@ -610,7 +610,7 @@ describe('Projects API Routes', () => {
         })
       });
 
-      const response = await approveStack(request, { params: { slug: 'test-slug' } });
+      const response = await approveStack(request, { params: Promise.resolve({ slug: 'test-slug' }) });
       const json = await response.json();
 
       expect(response.status).toBe(400);
@@ -629,7 +629,7 @@ describe('Projects API Routes', () => {
         })
       });
 
-      const response = await approveStack(request, { params: { slug: 'missing-slug' } });
+      const response = await approveStack(request, { params: Promise.resolve({ slug: 'missing-slug' }) });
       const json = await response.json();
 
       expect(response.status).toBe(404);
@@ -658,7 +658,7 @@ describe('Projects API Routes', () => {
         })
       });
 
-      await approveStack(request, { params: { slug: 'test-slug' } });
+      await approveStack(request, { params: Promise.resolve({ slug: 'test-slug' }) });
 
       expect(writeArtifactSpy).toHaveBeenCalled();
       expect(saveArtifactSpy).toHaveBeenCalled();
@@ -684,7 +684,7 @@ describe('Projects API Routes', () => {
         })
       });
 
-      await approveStack(request, { params: { slug: 'test-slug' } });
+      await approveStack(request, { params: Promise.resolve({ slug: 'test-slug' }) });
 
       expect(saveSpy).toHaveBeenCalledWith(
         'test-slug',
@@ -715,7 +715,7 @@ describe('Projects API Routes', () => {
         })
       });
 
-      await approveStack(request, { params: { slug: 'test-slug' } });
+      await approveStack(request, { params: Promise.resolve({ slug: 'test-slug' }) });
 
       expect(saveSpy).toHaveBeenCalledWith(
         'test-slug',
@@ -748,7 +748,7 @@ describe('Projects API Routes', () => {
         })
       });
 
-      const response = await approveStack(request, { params: { slug: 'test-slug' } });
+      const response = await approveStack(request, { params: Promise.resolve({ slug: 'test-slug' }) });
       const json = await response.json();
 
       // Should still succeed (graceful degradation)

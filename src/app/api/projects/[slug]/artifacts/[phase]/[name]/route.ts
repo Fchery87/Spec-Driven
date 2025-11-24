@@ -6,10 +6,10 @@ export const runtime = 'nodejs';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string; phase: string; name: string } }
+  { params }: { params: Promise<{ slug: string; phase: string; name: string }> }
 ) {
   try {
-    const { slug, phase, name } = params;
+    const { slug, phase, name } = await params;
 
     const metadata = await getProjectMetadata(slug);
 
