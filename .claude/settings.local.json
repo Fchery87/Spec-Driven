@@ -10,7 +10,9 @@
       "Bash(pkill:*)",
       "Bash(kill:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(tree:*)",
+      "Bash(npm audit:*)"
     ],
     "deny": [],
     "ask": []

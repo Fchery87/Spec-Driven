@@ -62,6 +62,7 @@ export default function ProjectPage() {
   const [showDependencySelector, setShowDependencySelector] = useState(false);
   const [approvingDependencies, setApprovingDependencies] = useState(false);
   const [regeneratingDependencies, setRegeneratingDependencies] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const dependencySelectorRef = useRef<HTMLDivElement | null>(null);
 
@@ -447,6 +448,15 @@ export default function ProjectPage() {
     }
   };
 
+  const handleViewArtifactsForPhase = (phase: string) => {
+    const phaseArtifacts = artifacts[phase];
+    if (!phaseArtifacts || phaseArtifacts.length === 0) {
+      recordAction('No artifacts available for this phase yet.', 'error');
+      return;
+    }
+    handleViewArtifact(phaseArtifacts[0], phase);
+  };
+
   if (loading) {
     return (
       <main className="min-h-screen bg-gradient-to-br from-background via-background to-muted p-8 flex items-center justify-center">
@@ -614,6 +624,7 @@ export default function ProjectPage() {
                   phases={calculatedPhases}
                   canAdvance={canAdvance}
                   onAdvance={handlePhaseAdvance}
+                  onPhaseClick={handleViewArtifactsForPhase}
                   canExecute={canExecutePhase}
                   onExecute={handleExecutePhase}
                   executing={executing}
@@ -836,13 +847,16 @@ export default function ProjectPage() {
                 <Button
                   variant="outline"
                   className="flex-1 min-w-[140px]"
-                  onClick={() => {
-                    fetchProject();
-                    fetchArtifacts();
+                  onClick={async () => {
+                    setRefreshing(true);
+                    await fetchProject();
+                    await fetchArtifacts();
+                    setRefreshing(false);
+                    recordAction('Refreshed project and artifacts.');
                   }}
-                  disabled={executing || advancing}
+                  disabled={executing || advancing || refreshing}
                 >
-                  Refresh
+                  {refreshing ? 'Refreshing...' : 'Refresh'}
                 </Button>
                 <Button
                   variant="destructive"
