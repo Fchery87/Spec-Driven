@@ -43,16 +43,22 @@ export const getProjectMetadata = async (slug: string, ownerId?: string) => {
       const buffer = await downloadFromR2(slug, 'metadata', 'metadata.json');
       const metadata = JSON.parse(buffer.toString('utf-8'));
       if (ownerId) {
+        // If metadata missing owner, skip validation and fall through to database fallback
         if (!metadata.created_by_id) {
-          logger.warn('Metadata missing owner in R2 payload', { slug, ownerId });
-          return null;
-        }
-        if (metadata.created_by_id !== ownerId) {
+          logger.warn('Metadata missing owner in R2 payload, falling back to database', { slug, ownerId });
+          // Don't return here - let it fall through to database fallback
+        } else if (metadata.created_by_id !== ownerId) {
+          // Only fail if owner exists but doesn't match
           logger.warn('Metadata ownership mismatch from R2', { slug, ownerId, createdBy: metadata.created_by_id });
           return null;
+        } else {
+          // Owner exists and matches - return metadata with owner added if missing
+          return { ...metadata, created_by_id: ownerId };
         }
+      } else {
+        // No ownership check needed
+        return metadata;
       }
-      return metadata;
     } catch {
       logger.debug('Failed to get project metadata from R2, trying local file system', { slug });
     }
@@ -64,16 +70,22 @@ export const getProjectMetadata = async (slug: string, ownerId?: string) => {
     if (existsSync(path)) {
       const metadata = JSON.parse(readFileSync(path, 'utf8'));
       if (ownerId) {
+        // If metadata missing owner, skip validation and fall through to database fallback
         if (!metadata.created_by_id) {
-          logger.warn('Metadata missing owner in filesystem payload', { slug, ownerId });
-          return null;
-        }
-        if (metadata.created_by_id !== ownerId) {
+          logger.warn('Metadata missing owner in filesystem payload, falling back to database', { slug, ownerId });
+          // Don't return here - let it fall through to database fallback
+        } else if (metadata.created_by_id !== ownerId) {
+          // Only fail if owner exists but doesn't match
           logger.warn('Metadata ownership mismatch from filesystem', { slug, ownerId, createdBy: metadata.created_by_id });
           return null;
+        } else {
+          // Owner exists and matches - return metadata with owner
+          return { ...metadata, created_by_id: ownerId };
         }
+      } else {
+        // No ownership check needed
+        return metadata;
       }
-      return metadata;
     }
   } catch {
     // ignore and fall through to DB lookup
