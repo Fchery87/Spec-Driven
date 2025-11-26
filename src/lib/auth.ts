@@ -4,12 +4,13 @@ import { randomUUID } from "crypto";
 
 import { db } from "@/backend/lib/drizzle";
 import { logger } from "@/lib/logger";
+import { env, getJWTSecret } from "@/lib/env";
 import * as schema from "@/backend/lib/schema";
 
-const baseURL = process.env.NEXT_PUBLIC_APP_URL || process.env.AUTH_BASE_URL;
+const baseURL = env.NEXT_PUBLIC_APP_URL || env.AUTH_BASE_URL;
 
 // Validate required environment variables
-if (!baseURL && process.env.NODE_ENV === "production") {
+if (!baseURL && env.NODE_ENV === "production") {
   logger.warn(
     "[AUTH] Warning: NEXT_PUBLIC_APP_URL or AUTH_BASE_URL not set. This is required in production."
   );
@@ -25,17 +26,21 @@ export const auth = betterAuth({
       verification: schema.verifications,
     },
   }),
-  secret: process.env.BETTER_AUTH_SECRET || process.env.AUTH_SECRET || "fallback-dev-secret-change-in-production",
+  secret: getJWTSecret(),
   baseURL,
-  // Configure ID generation to use proper UUID format for PostgreSQL
+  // Configure ID generation and security settings
   advanced: {
     database: {
       generateId: () => randomUUID(),
     },
+    // CSRF protection via cookies (enabled by default)
+    // Better Auth automatically validates CSRF tokens on state-changing requests
+    useSecureCookies: env.NODE_ENV === "production",
+    cookiePrefix: "auth",
   },
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false, // Set to true in production for security
+    requireEmailVerification: env.NODE_ENV === "production", // Enforce in production
     autoSignIn: true,
     async sendResetPassword(data) {
       logger.info("Password reset requested", { data });
@@ -43,9 +48,9 @@ export const auth = betterAuth({
   },
   socialProviders: {
     google: {
-      clientId: process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-      enabled: !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET,
+      clientId: env.GOOGLE_CLIENT_ID || '',
+      clientSecret: env.GOOGLE_CLIENT_SECRET || '',
+      enabled: !!env.GOOGLE_CLIENT_ID && !!env.GOOGLE_CLIENT_SECRET,
     },
   },
   session: {

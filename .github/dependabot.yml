@@ -1,0 +1,96 @@
+version: 2
+
+updates:
+  # NPM dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "America/New_York"
+
+    # Create PRs for version updates
+    open-pull-requests-limit: 5
+
+    # Assign to maintainer
+    reviewers:
+      - "nochaserz"
+
+    # Assign labels for filtering
+    labels:
+      - "dependencies"
+      - "automated"
+
+    # Use semantic versioning strategy
+    versioning-strategy: "increase"
+
+    # Only create PRs for security updates and major version bumps
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+
+    # Group related dependency updates
+    groups:
+      security-updates:
+        dependency-type: "production"
+        update-types:
+          - "version-update:semver-patch"
+          - "version-update:semver-minor"
+        patterns:
+          - "*security*"
+          - "*vulnerability*"
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
+
+    # Commit message configuration
+    commit-message:
+      prefix: "chore(deps):"
+      prefix-minor: "chore(deps-minor):"
+      prefix-major: "chore(deps-major):"
+      include: "scope"
+
+    # Ignore certain packages or versions
+    ignore:
+      # Ignore pre-release versions
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-pre-release"
+
+    # Rebase strategy
+    rebase-strategy: "auto"
+
+    # Allow automerge for patch updates only (optional, requires branch protection rules)
+    # auto-merge: true
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "America/New_York"
+
+    # Limit concurrent PRs
+    open-pull-requests-limit: 3
+
+    # Reviewers
+    reviewers:
+      - "nochaserz"
+
+    # Labels
+    labels:
+      - "dependencies"
+      - "automated"
+      - "actions"
+
+    # Commit message
+    commit-message:
+      prefix: "ci(actions):"
+
+    # Rebase automatically
+    rebase-strategy: "auto"

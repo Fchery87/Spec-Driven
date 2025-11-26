@@ -49,11 +49,12 @@ export class GeminiClient {
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
         const response = await fetch(
-          `${this.baseUrl}/models/${this.config.model}:generateContent?key=${this.config.api_key}`,
+          `${this.baseUrl}/models/${this.config.model}:generateContent`,
           {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'x-goog-api-key': this.config.api_key,
             },
             body: JSON.stringify(requestBody)
           }
