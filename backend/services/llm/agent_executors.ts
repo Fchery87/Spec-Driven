@@ -36,15 +36,24 @@ function buildPrompt(template: string, variables: Record<string, any>): string {
 
 function parseArtifacts(content: string, expectedFiles: string[]): Record<string, string> {
   const artifacts: Record<string, string> = {};
+  const expectedMap = expectedFiles.reduce<Record<string, string>>((map, filename) => {
+    map[filename.toLowerCase()] = filename;
+    return map;
+  }, {});
 
   // Try to extract files from markdown code blocks with explicit filename markers
-  const fileRegex = /```(\w+)?\n?filename:\s*(.+?)\n([\s\S]*?)```/g;
+  // Supports:
+  // ```markdown filename: plan.md\n...``` and
+  // ```\nfilename: plan.md\n...```
+  const fileRegex = /```(?:(\w+)[ \t]*)?\n?filename:\s*([^\n]+)\n([\s\S]*?)```/g;
   let match;
 
   while ((match = fileRegex.exec(content)) !== null) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [, language, filename, fileContent] = match;
-    artifacts[filename.trim()] = fileContent.trim();
+    const rawName = filename.trim();
+    const normalizedName = expectedMap[rawName.toLowerCase()] || rawName;
+    artifacts[normalizedName] = fileContent.trim();
   }
 
   // If some but not all files found, try header-based parsing
@@ -236,6 +245,42 @@ async function executeScrumMasterAgent(
 
   const response = await llmClient.generateCompletion(prompt);
   const artifacts = parseArtifacts(response.content, ['epics.md', 'tasks.md', 'plan.md']);
+
+  // If plan.md is missing/empty (often due to model truncation), regenerate plan only
+  if (!artifacts['plan.md'] || artifacts['plan.md'].trim().length === 0) {
+    logger.warn('[SOLUTIONING] plan.md missing, triggering fallback generation');
+    const fallbackPrompt = [
+      'You previously produced epics.md and tasks.md. Now produce ONLY plan.md.',
+      'Keep it concise enough to avoid truncation but cover: timeline, sprints, MVP scope, phase 2 scope, risks, resources, success metrics, go-live, support/maintenance.',
+      'Output a single fenced block exactly like:',
+      '```',
+      'filename: plan.md',
+      '---',
+      'title: Execution Plan',
+      'owner: scrummaster',
+      'version: 1.0',
+      'date: <current-date>',
+      'status: draft',
+      '---',
+      '',
+      '<content here>',
+      '```',
+      '',
+      'Context documents:',
+      'PRD:',
+      prd,
+      '',
+      'Data model:',
+      dataModel,
+      '',
+      'API spec:',
+      apiSpec
+    ].join('\n');
+
+    const planResponse = await llmClient.generateCompletion(fallbackPrompt);
+    const planArtifacts = parseArtifacts(planResponse.content, ['plan.md']);
+    artifacts['plan.md'] = planArtifacts['plan.md'];
+  }
 
   logger.info('[SOLUTIONING] Scrum Master Agent completed', { artifacts: Object.keys(artifacts) });
   return artifacts;
