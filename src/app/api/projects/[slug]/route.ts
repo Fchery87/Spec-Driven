@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getProjectMetadata, saveProjectMetadata, deleteProject, deleteProjectFromDB, persistProjectToDB } from '@/app/api/lib/project-utils';
 import { logger } from '@/lib/logger';
 import { withAuth, type AuthSession } from '@/app/api/middleware/auth-guard';
+import { deleteProjectFromR2 } from '@/lib/r2-storage';
 
 export const runtime = 'nodejs';
 
@@ -122,10 +123,19 @@ const deleteHandler = withAuth(
         );
       }
 
-      // Delete from database
+      // Delete from Neon database (CASCADE deletes all related artifacts)
       await deleteProjectFromDB(slug, session.user.id);
 
-      // Delete the project directory and all its contents
+      // Delete all R2 files for this project
+      try {
+        await deleteProjectFromR2(slug);
+      } catch (r2Error) {
+        const err = r2Error instanceof Error ? r2Error : new Error(String(r2Error));
+        logger.warn('Failed to delete project files from R2, continuing with local deletion', { slug, error: err.message });
+        // Continue with local filesystem deletion even if R2 deletion fails
+      }
+
+      // Delete the project directory and all its contents (local filesystem)
       const deleted = deleteProject(slug);
 
       if (!deleted) {

@@ -268,6 +268,69 @@ export async function listR2Artifacts(slug: string, phase: string): Promise<R2Fi
 }
 
 /**
+ * Delete all project files from R2 (bulk delete)
+ * Removes all artifacts, metadata, and project-related files for a given project slug
+ */
+export async function deleteProjectFromR2(slug: string): Promise<void> {
+  if (!R2_BUCKET_NAME) {
+    logger.warn('R2 not configured, skipping R2 deletion', { slug });
+    return;
+  }
+
+  const projectPrefix = `projects/${slug}/`;
+
+  try {
+    // List all objects with the project prefix
+    let continuationToken: string | undefined;
+    let deletedCount = 0;
+
+    do {
+      const listCommand = new ListObjectsV2Command({
+        Bucket: R2_BUCKET_NAME,
+        Prefix: projectPrefix,
+        ContinuationToken: continuationToken,
+      });
+
+      const response = await r2Client.send(listCommand);
+      const keysToDelete = response.Contents?.map((obj) => ({ Key: obj.Key! })) || [];
+
+      if (keysToDelete.length === 0) {
+        break;
+      }
+
+      // Delete all listed objects
+      for (const key of keysToDelete) {
+        try {
+          const deleteCommand = new DeleteObjectCommand({
+            Bucket: R2_BUCKET_NAME,
+            Key: key.Key,
+          });
+          await r2Client.send(deleteCommand);
+          deletedCount++;
+        } catch (deleteError) {
+          const err = deleteError instanceof Error ? deleteError : new Error(String(deleteError));
+          logger.warn('Failed to delete individual R2 file during project deletion', {
+            slug,
+            key: key.Key,
+            error: err.message,
+          });
+          // Continue deleting other files even if one fails
+        }
+      }
+
+      // Handle pagination
+      continuationToken = response.NextContinuationToken;
+    } while (continuationToken);
+
+    logger.info('Project deleted from R2', { slug, deletedCount });
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('Failed to delete project from R2', err, { slug });
+    throw err;
+  }
+}
+
+/**
  * Generate a signed URL for temporary access to a file
  * Useful for download links that expire after a certain time
  */
