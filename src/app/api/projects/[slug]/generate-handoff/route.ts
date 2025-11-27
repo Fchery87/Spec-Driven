@@ -36,23 +36,43 @@ export const POST = withAuth(
         );
       }
 
-      // Generate HANDOFF.md
+      // Generate HANDOFF.md and README.md
       const generator = new HandoffGenerator();
       const handoffContent = await generator.generateHandoff(slug, metadata);
 
       // Save HANDOFF.md artifact
       await saveArtifact(slug, 'DONE', 'HANDOFF.md', handoffContent);
 
-      // Log artifact to database
+      // Collect artifacts for README generation
+      const allPhases = ['ANALYSIS', 'STACK_SELECTION', 'SPEC', 'DEPENDENCIES', 'SOLUTIONING'];
+      const artifacts: Record<string, string> = {};
+      for (const phase of allPhases) {
+        try {
+          const { listArtifacts: listPhaseArtifacts } = await import('@/app/api/lib/project-utils');
+          const phaseArtifacts = await listPhaseArtifacts(slug, phase);
+          for (const artifact of phaseArtifacts) {
+            artifacts[`${phase}/${artifact.name}`] = artifact.content || '';
+          }
+        } catch {
+          // Continue even if some phases don't have artifacts
+        }
+      }
+
+      // Generate and save README.md
+      const readmeContent = await generator.generateReadme(slug, metadata, artifacts);
+      await saveArtifact(slug, 'DONE', 'README.md', readmeContent);
+
+      // Log artifacts to database
       try {
         const dbService = new ProjectDBService();
         const project = await dbService.getProjectBySlug(slug, session.user.id);
         if (project) {
           await dbService.saveArtifact(project.id, 'DONE', 'HANDOFF.md', handoffContent);
+          await dbService.saveArtifact(project.id, 'DONE', 'README.md', readmeContent);
         }
       } catch (dbError) {
         const dbErr = dbError instanceof Error ? dbError : new Error(String(dbError));
-        logger.error('Warning: Failed to log HANDOFF.md to database:', dbErr);
+        logger.error('Warning: Failed to log artifacts to database:', dbErr);
         // Don't fail the request if database logging fails
       }
 
@@ -71,9 +91,13 @@ export const POST = withAuth(
       return NextResponse.json({
         success: true,
         data: {
-          message: 'HANDOFF.md generated successfully',
+          message: 'HANDOFF.md and README.md generated successfully',
           slug,
-          size_bytes: handoffContent.length,
+          artifacts_generated: ['HANDOFF.md', 'README.md'],
+          size_bytes: {
+            handoff: handoffContent.length,
+            readme: readmeContent.length
+          },
           phases_included: ['ANALYSIS', 'STACK_SELECTION', 'SPEC', 'DEPENDENCIES', 'SOLUTIONING'],
           ready_for_download: true
         }

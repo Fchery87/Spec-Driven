@@ -62,6 +62,58 @@ function parseArtifacts(content: string, expectedFiles: string[]): Record<string
     artifacts[normalizedName] = fileContent.trim();
   }
 
+  // Special handling for JSON files - try to extract JSON blocks
+  for (const filename of expectedFiles) {
+    if (filename.endsWith('.json') && !artifacts[filename]) {
+      // Try multiple patterns for JSON extraction
+      // Pattern 1: ```json\n{...}```
+      const jsonBlockRegex = /```json\s*\n(\{[\s\S]*?\})\s*```/g;
+      let jsonMatch;
+      while ((jsonMatch = jsonBlockRegex.exec(content)) !== null) {
+        const jsonContent = jsonMatch[1].trim();
+        // Validate it's actually valid JSON
+        try {
+          JSON.parse(jsonContent);
+          artifacts[filename] = jsonContent;
+          break;
+        } catch {
+          // Not valid JSON, continue searching
+        }
+      }
+
+      // Pattern 2: Look for OpenAPI structure specifically
+      if (!artifacts[filename]) {
+        const openapiMatch = content.match(/"openapi"\s*:\s*"[\d.]+"/);
+        if (openapiMatch) {
+          // Find the complete JSON object containing openapi
+          const startIndex = content.lastIndexOf('{', openapiMatch.index);
+          if (startIndex !== -1) {
+            // Try to find matching closing brace
+            let braceCount = 0;
+            let endIndex = -1;
+            for (let i = startIndex; i < content.length; i++) {
+              if (content[i] === '{') braceCount++;
+              if (content[i] === '}') braceCount--;
+              if (braceCount === 0) {
+                endIndex = i + 1;
+                break;
+              }
+            }
+            if (endIndex !== -1) {
+              const jsonContent = content.slice(startIndex, endIndex);
+              try {
+                JSON.parse(jsonContent);
+                artifacts[filename] = jsonContent;
+              } catch {
+                // Failed to parse, continue
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   // If some but not all files found, try header-based parsing
   if (Object.keys(artifacts).length > 0 && Object.keys(artifacts).length < expectedFiles.length) {
     for (const filename of expectedFiles) {
@@ -203,7 +255,12 @@ async function executeArchitectAgent(
   stackChoice?: string,
   projectName?: string
 ): Promise<Record<string, string>> {
-  logger.info(`[${phase}] Executing Architect Agent`);
+  logger.info(`[${phase}] Executing Architect Agent`, {
+    briefLength: projectBrief?.length || 0,
+    prdLength: prd?.length || 0,
+    stackChoice,
+    projectName
+  });
 
   const agentConfig = configLoader.getSection('agents').architect;
 
@@ -235,7 +292,112 @@ async function executeArchitectAgent(
   const response = await llmClient.generateCompletion(prompt, undefined, 3, phase);
   const artifacts = parseArtifacts(response.content, expectedFiles);
 
-  logger.info(`[${phase}] Architect Agent completed`, { artifacts: Object.keys(artifacts) });
+  logger.info(`[${phase}] Architect Agent initial parse`, {
+    artifacts: Object.keys(artifacts),
+    dataModelLength: artifacts['data-model.md']?.length || 0,
+    apiSpecLength: artifacts['api-spec.json']?.length || 0
+  });
+
+  // Fallback: If api-spec.json is empty in SPEC phase, try to regenerate it specifically
+  if (phase === 'SPEC' && (!artifacts['api-spec.json'] || artifacts['api-spec.json'].trim().length < 100)) {
+    logger.warn('[SPEC] api-spec.json missing or too short, triggering fallback generation');
+    const fallbackPrompt = `You are a Chief Architect. Generate ONLY an OpenAPI 3.0.3 specification based on the following PRD.
+
+## PRD Summary:
+${prd.slice(0, 8000)}
+
+## Requirements:
+1. Output ONLY valid JSON - no markdown, no explanation
+2. Must include "openapi": "3.0.3"
+3. Include all CRUD endpoints for entities mentioned in the PRD
+4. Include authentication endpoints (register, login, logout)
+5. Include proper schemas in components
+6. Include error responses (400, 401, 403, 404, 500)
+
+Output the complete OpenAPI JSON now:`;
+
+    const apiSpecResponse = await llmClient.generateCompletion(fallbackPrompt, undefined, 3, phase);
+    
+    // Try to extract JSON from the response
+    let apiSpecContent = apiSpecResponse.content.trim();
+    
+    // Remove markdown code fences if present
+    if (apiSpecContent.startsWith('```')) {
+      apiSpecContent = apiSpecContent.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+    }
+    
+    // Try to parse to validate
+    try {
+      JSON.parse(apiSpecContent);
+      artifacts['api-spec.json'] = apiSpecContent;
+      logger.info('[SPEC] api-spec.json fallback generation successful', { length: apiSpecContent.length });
+    } catch (e) {
+      logger.error('[SPEC] api-spec.json fallback generation failed to produce valid JSON');
+    }
+  }
+
+  // Fallback: If data-model.md is too short, try to regenerate
+  if (phase === 'SPEC' && (!artifacts['data-model.md'] || artifacts['data-model.md'].trim().length < 500)) {
+    logger.warn('[SPEC] data-model.md missing or too short, triggering fallback generation');
+    const fallbackPrompt = `You are a Chief Architect. Generate ONLY a comprehensive data-model.md based on the following PRD.
+
+## PRD Summary:
+${prd.slice(0, 8000)}
+
+## Requirements:
+1. Include a Mermaid ER diagram showing all entity relationships
+2. For EACH table, provide a complete schema with columns, types, constraints
+3. Include indexes with rationale
+4. Include enums and custom types
+5. Include migration strategy notes
+
+Output format:
+\`\`\`
+filename: data-model.md
+---
+title: Data Model
+owner: architect
+version: 1.0
+date: ${new Date().toISOString().split('T')[0]}
+status: draft
+---
+
+# Data Model
+
+## Entity-Relationship Diagram
+(Mermaid diagram here)
+
+## Table Definitions
+(Complete table schemas here)
+
+## Indexes
+(Index definitions here)
+
+## Enums and Custom Types
+(Type definitions here)
+
+## Migration Strategy
+(Migration notes here)
+\`\`\`
+
+Generate the complete data model now:`;
+
+    const dataModelResponse = await llmClient.generateCompletion(fallbackPrompt, undefined, 3, phase);
+    const fallbackArtifacts = parseArtifacts(dataModelResponse.content, ['data-model.md']);
+    
+    if (fallbackArtifacts['data-model.md'] && fallbackArtifacts['data-model.md'].trim().length > 500) {
+      artifacts['data-model.md'] = fallbackArtifacts['data-model.md'];
+      logger.info('[SPEC] data-model.md fallback generation successful', { length: artifacts['data-model.md'].length });
+    } else {
+      logger.error('[SPEC] data-model.md fallback generation failed to produce sufficient content');
+    }
+  }
+
+  logger.info(`[${phase}] Architect Agent completed`, {
+    artifacts: Object.keys(artifacts),
+    dataModelLength: artifacts['data-model.md']?.length || 0,
+    apiSpecLength: artifacts['api-spec.json']?.length || 0
+  });
   return artifacts;
 }
 

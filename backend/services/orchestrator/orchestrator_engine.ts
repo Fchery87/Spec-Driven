@@ -273,12 +273,22 @@ export class OrchestratorEngine {
             projectName
           );
 
+          logger.debug('[SPEC] PRD generation complete', {
+            prdLength: prdArtifacts['PRD.md']?.length || 0,
+            hasContent: !!prdArtifacts['PRD.md']?.trim()
+          });
+
           // Then generate data model and API spec with Architect
           // Add the newly generated PRD to artifacts for Architect to use
           const artifactsWithPRD = {
             ...artifacts,
             'SPEC/PRD.md': prdArtifacts['PRD.md'] || ''
           };
+
+          logger.debug('[SPEC] Calling Architect with PRD', {
+            prdLength: artifactsWithPRD['SPEC/PRD.md']?.length || 0,
+            briefLength: artifactsWithPRD['ANALYSIS/project-brief.md']?.length || 0
+          });
 
           const architectArtifacts = await getArchitectExecutor(
             llmClient,
@@ -288,6 +298,13 @@ export class OrchestratorEngine {
             stackChoice,
             projectName
           );
+
+          logger.debug('[SPEC] Architect generation complete', {
+            dataModelLength: architectArtifacts['data-model.md']?.length || 0,
+            apiSpecLength: architectArtifacts['api-spec.json']?.length || 0,
+            hasDataModel: !!architectArtifacts['data-model.md']?.trim(),
+            hasApiSpec: !!architectArtifacts['api-spec.json']?.trim()
+          });
 
           // Combine all artifacts
           generatedArtifacts = {
