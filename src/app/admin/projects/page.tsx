@@ -1,10 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Table,
@@ -14,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { FolderOpen, Search, ExternalLink, User } from 'lucide-react';
+import { FolderOpen, Search, User } from 'lucide-react';
 
 interface ProjectData {
   id: string;
@@ -36,7 +34,6 @@ interface ProjectData {
 const PHASES = ['ANALYSIS', 'STACK_SELECTION', 'SPEC', 'DEPENDENCIES', 'SOLUTIONING', 'DONE'];
 
 export default function AllProjectsPage() {
-  const router = useRouter();
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -145,7 +142,6 @@ export default function AllProjectsPage() {
                 <TableHead>Stack</TableHead>
                 <TableHead>Approvals</TableHead>
                 <TableHead>Created</TableHead>
-                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -202,16 +198,6 @@ export default function AllProjectsPage() {
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {new Date(project.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => router.push(`/project/${project.slug}`)}
-                    >
-                      <ExternalLink className="h-4 w-4 mr-1" />
-                      View
-                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
