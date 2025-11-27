@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { StackSelection } from '@/components/orchestration/StackSelection';
 import { ArtifactViewer } from '@/components/orchestration/ArtifactViewer';
-import { DependenciesReview } from '@/components/orchestration/DependenciesReview';
+import { DependencySelector, type DependencySelection } from '@/components/orchestration/DependencySelector';
 import { ProjectHeader } from '@/components/orchestration/ProjectHeader';
 import { PhaseTimeline } from '@/components/orchestration/PhaseTimeline';
 import { ArtifactSidebar } from '@/components/orchestration/ArtifactSidebar';
@@ -241,14 +241,29 @@ export default function ProjectPage() {
     }
   };
 
-  const handleDependenciesApprove = async (approvalNotes?: string) => {
+  const handleDependenciesApprove = async (selection: DependencySelection) => {
     setApprovingDependencies(true);
     setError(null);
     try {
+      // Build the API payload from the selection
+      const payload = selection.mode === 'preset' 
+        ? {
+            mode: 'preset',
+            architecture: selection.architecture,
+            option: selection.option,
+            notes: selection.notes,
+          }
+        : {
+            mode: 'custom',
+            architecture: 'custom',
+            customStack: selection.customStack,
+            notes: selection.notes,
+          };
+
       const response = await fetch(`/api/projects/${slug}/approve-dependencies`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notes: approvalNotes }),
+        body: JSON.stringify(payload),
         cache: 'no-store'
       })
 
@@ -598,31 +613,16 @@ export default function ProjectPage() {
             className="mb-6 border border-amber-500/30 bg-amber-500/5"
           >
             <CardHeader>
-              <CardTitle>Review Dependencies</CardTitle>
+              <CardTitle>Select Dependencies</CardTitle>
               <CardDescription>
-                Review and approve the generated dependency plan for your architecture.
+                Choose and approve the technology stack and dependencies for your project.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <DependenciesReview
-                architecture={project.stack_choice || 'unknown'}
-                dependenciesSummary={{
-                  total_packages: 18,
-                  production_deps: 12,
-                  dev_deps: 6,
-                  vulnerabilities: 0,
-                  license_types: ['MIT', 'Apache-2.0']
-                }}
-                onApprove={() => handleDependenciesApprove()}
-                onRegenerate={() => handleRegenerateDependencies()}
-                onViewDetails={() => {
-                  const artifact = artifacts['DEPENDENCIES']?.[0];
-                  if (artifact) {
-                    handleViewArtifact(artifact, 'DEPENDENCIES');
-                  }
-                }}
+              <DependencySelector
+                selectedArchitecture={project.stack_choice || undefined}
+                onApprove={handleDependenciesApprove}
                 submitting={approvingDependencies}
-                regenerating={regeneratingDependencies}
               />
             </CardContent>
           </Card>

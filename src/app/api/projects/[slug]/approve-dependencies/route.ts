@@ -3,9 +3,177 @@ import { getProjectMetadata, saveProjectMetadata, writeArtifact, persistProjectT
 import { ProjectDBService } from '@/backend/services/database/drizzle_project_db_service';
 import { logger } from '@/lib/logger';
 import { withAuth, type AuthSession } from '@/app/api/middleware/auth-guard';
-import { ApproveDependenciesSchema } from '@/app/api/schemas';
+import { ApproveDependenciesSchema, type DependencyPackage, type DependencyOption } from '@/app/api/schemas';
 
 export const runtime = 'nodejs';
+
+/**
+ * Generate DEPENDENCIES.md content from selected packages
+ */
+function generateDependenciesMarkdown(
+  option: DependencyOption | undefined,
+  customStack: { frontend: string; backend: string; database: string; deployment: string; dependencies: string[]; requests?: string } | undefined,
+  architecture: string | undefined,
+  notes: string | undefined
+): string {
+  const date = new Date().toISOString().split('T')[0];
+  
+  if (option) {
+    // Preset selection
+    const productionDeps = option.packages.filter(p => p.category !== 'dev');
+    const devDeps = option.packages.filter(p => p.category === 'dev');
+    
+    const formatPackage = (pkg: DependencyPackage) => {
+      let line = `| ${pkg.name} | ${pkg.version} | ${pkg.category} |`;
+      if (pkg.size) line = `| ${pkg.name} | ${pkg.version} | ${pkg.category} | ${pkg.size} |`;
+      return line;
+    };
+
+    return `---
+title: "Project Dependencies"
+owner: "devops"
+version: "1"
+date: "${date}"
+status: "approved"
+architecture: "${architecture || 'web_application'}"
+preset: "${option.id}"
+---
+
+# Project Dependencies
+
+## Overview
+
+| Attribute | Value |
+|-----------|-------|
+| **Architecture** | ${architecture?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Web Application'} |
+| **Preset** | ${option.title} |
+| **Total Packages** | ${option.packages.length} |
+| **Production** | ${productionDeps.length} |
+| **Development** | ${devDeps.length} |
+| **Status** | ✅ Approved |
+
+## Stack Configuration
+
+| Component | Technology |
+|-----------|------------|
+| **Frontend** | ${option.frontend} |
+| **Backend** | ${option.backend} |
+| **Database** | ${option.database} |
+| **Deployment** | ${option.deployment} |
+
+## Production Dependencies
+
+| Package | Version | Category | Size |
+|---------|---------|----------|------|
+${productionDeps.map(formatPackage).join('\n')}
+
+${devDeps.length > 0 ? `## Development Dependencies
+
+| Package | Version | Category | Size |
+|---------|---------|----------|------|
+${devDeps.map(formatPackage).join('\n')}
+` : ''}
+
+## Key Highlights
+
+${option.highlights.map(h => `- ${h}`).join('\n')}
+
+## Installation
+
+\`\`\`bash
+# Install all dependencies
+pnpm install
+
+# Or with npm
+npm install
+
+# Or with yarn
+yarn install
+\`\`\`
+
+## Approval Notes
+
+${notes || 'Dependencies reviewed and approved for this project.'}
+
+## Approved
+
+- **Date**: ${new Date().toISOString()}
+- **Status**: ✅ Approved
+`;
+  } else if (customStack) {
+    // Custom stack
+    return `---
+title: "Project Dependencies"
+owner: "devops"
+version: "1"
+date: "${date}"
+status: "approved"
+architecture: "custom"
+---
+
+# Project Dependencies (Custom Stack)
+
+## Overview
+
+| Attribute | Value |
+|-----------|-------|
+| **Architecture** | Custom |
+| **Total Packages** | ${customStack.dependencies.length} |
+| **Status** | ✅ Approved |
+
+## Stack Configuration
+
+| Component | Technology |
+|-----------|------------|
+| **Frontend** | ${customStack.frontend} |
+| **Backend** | ${customStack.backend} |
+| **Database** | ${customStack.database} |
+| **Deployment** | ${customStack.deployment} |
+
+## Dependencies
+
+${customStack.dependencies.map(d => `- ${d}`).join('\n')}
+
+${customStack.requests ? `## Additional Requests
+
+${customStack.requests}
+` : ''}
+
+## Approval Notes
+
+${notes || 'Custom dependencies reviewed and approved for this project.'}
+
+## Approved
+
+- **Date**: ${new Date().toISOString()}
+- **Status**: ✅ Approved
+`;
+  }
+
+  // Fallback for legacy approval (notes only)
+  return `---
+title: "Dependencies Approval"
+owner: "devops"
+version: "1"
+date: "${date}"
+status: "approved"
+---
+
+# Dependencies Approval
+
+## Status
+**Approved**
+
+## Approval Notes
+${notes || 'Dependencies reviewed and approved for this project.'}
+
+## Date Approved
+${new Date().toISOString()}
+
+## What This Means
+All project dependencies have been reviewed and approved. The project is now cleared to proceed to the SOLUTIONING phase where architecture design and task breakdown will occur.
+`;
+}
 
 export const POST = withAuth(
   async (
@@ -36,7 +204,7 @@ export const POST = withAuth(
         );
       }
 
-      const { notes: approvalNotes } = validationResult.data;
+      const { notes, mode, architecture, option, customStack } = validationResult.data;
 
       const metadata = await getProjectMetadata(slug, session.user.id);
 
@@ -58,7 +226,13 @@ export const POST = withAuth(
         );
       }
 
-      // Create approval artifact
+      // Generate DEPENDENCIES.md content
+      const dependenciesContent = generateDependenciesMarkdown(option, customStack, architecture, notes);
+
+      // Write DEPENDENCIES.md artifact to filesystem
+      await writeArtifact(slug, 'DEPENDENCIES', 'DEPENDENCIES.md', dependenciesContent);
+
+      // Also write approval.md for backward compatibility
       const approvalContent = `---
 title: "Dependencies Approval"
 owner: "devops"
@@ -72,25 +246,33 @@ status: "approved"
 ## Status
 **Approved**
 
+## Mode
+${mode === 'preset' ? `Preset: ${option?.title}` : mode === 'custom' ? 'Custom Stack' : 'Direct Approval'}
+
 ## Approval Notes
-${approvalNotes || 'Dependencies reviewed and approved for this project.'}
+${notes || 'Dependencies reviewed and approved for this project.'}
 
 ## Date Approved
 ${new Date().toISOString()}
-
-## What This Means
-All project dependencies have been reviewed and approved. The project is now cleared to proceed to the SOLUTIONING phase where architecture design and task breakdown will occur.
 `;
 
-      // Write artifact to filesystem
       await writeArtifact(slug, 'DEPENDENCIES', 'approval.md', approvalContent);
 
-      // DB-primary: persist artifact to database
+      // DB-primary: persist artifacts to database
       const dbService = new ProjectDBService();
       const dbProject = await dbService.getProjectBySlug(slug, session.user.id);
 
       if (dbProject) {
         try {
+          // Save DEPENDENCIES.md
+          await dbService.saveArtifact(
+            dbProject.id,
+            'DEPENDENCIES',
+            'DEPENDENCIES.md',
+            dependenciesContent
+          );
+
+          // Save approval.md
           await dbService.saveArtifact(
             dbProject.id,
             'DEPENDENCIES',
@@ -99,27 +281,32 @@ All project dependencies have been reviewed and approved. The project is now cle
           );
 
           logger.info(
-            'Dependencies approval artifact persisted to database',
+            'Dependencies artifacts persisted to database',
             {
               slug,
               projectId: dbProject.id,
+              mode,
+              architecture,
             }
           );
         } catch (dbError) {
           logger.warn(
-            `Failed to persist dependencies approval to database: ${dbError instanceof Error ? dbError.message : String(dbError)}`,
+            `Failed to persist dependencies to database: ${dbError instanceof Error ? dbError.message : String(dbError)}`,
             { slug }
           );
-          // Don't fail the request; artifact is still in filesystem
+          // Don't fail the request; artifacts are still in filesystem
         }
       }
 
-      // Update project metadata
+      // Update project metadata with dependency info
       const updated = {
         ...metadata,
         dependencies_approved: true,
         dependencies_approval_date: new Date().toISOString(),
-        dependencies_approval_notes: approvalNotes,
+        dependencies_approval_notes: notes,
+        dependencies_mode: mode,
+        dependencies_architecture: architecture,
+        dependencies_preset: option?.id,
         created_by_id: metadata.created_by_id || session.user.id,
         updated_at: new Date().toISOString(),
       };
@@ -130,6 +317,9 @@ All project dependencies have been reviewed and approved. The project is now cle
       logger.info('Dependencies approved', {
         slug,
         userId: session.user.id,
+        mode,
+        architecture,
+        preset: option?.id,
       });
 
       return NextResponse.json({
@@ -137,6 +327,9 @@ All project dependencies have been reviewed and approved. The project is now cle
         data: {
           slug,
           dependencies_approved: true,
+          mode,
+          architecture,
+          preset: option?.id,
           message: 'Dependencies approved successfully',
         },
       });
