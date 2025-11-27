@@ -83,6 +83,10 @@ export const dependencyApprovals = pgTable('DependencyApproval', {
   projectIdIdx: index('DependencyApproval_project_id_idx').on(table.projectId),
 }));
 
+// User roles enum
+export const userRoleEnum = ['user', 'admin', 'super_admin'] as const;
+export type UserRole = typeof userRoleEnum[number];
+
 // User model (for future multi-user support)
 export const users = pgTable('User', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -91,6 +95,7 @@ export const users = pgTable('User', {
   emailVerified: boolean('email_verified').notNull().default(false),
   image: text('image'),
   passwordHash: text('password_hash'),
+  role: text('role').notNull().default('user'), // 'user' | 'admin' | 'super_admin'
 
   // Timestamps
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

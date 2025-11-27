@@ -38,6 +38,16 @@ export const auth = betterAuth({
     useSecureCookies: env.NODE_ENV === "production",
     cookiePrefix: "auth",
   },
+  user: {
+    additionalFields: {
+      role: {
+        type: "string",
+        required: false,
+        defaultValue: "user",
+        input: false,
+      },
+    },
+  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false, // Disabled for now - enable after email system setup

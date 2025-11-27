@@ -1,8 +1,22 @@
 import { betterFetch } from "@better-fetch/fetch"
-import type { Session } from "better-auth/types"
 import { NextRequest, NextResponse } from "next/server"
 
+interface SessionUser {
+  id: string;
+  email: string;
+  role?: 'user' | 'admin' | 'super_admin';
+}
+
+interface SessionData {
+  user: SessionUser;
+  session: {
+    id: string;
+    expiresAt: Date;
+  };
+}
+
 const publicRoutes = ["/", "/sign-in", "/sign-up"]
+const adminRoutes = ["/admin"]
 
 /**
  * Apply security headers to all responses
@@ -112,6 +126,16 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
   return response
 }
 
+function isAdminRoute(pathname: string): boolean {
+  return adminRoutes.some(route => pathname.startsWith(route))
+}
+
+function isAdmin(user: SessionUser): boolean {
+  // Handle undefined role (for sessions created before role field was added)
+  if (!user.role) return false
+  return user.role === 'admin' || user.role === 'super_admin'
+}
+
 export default async function authMiddleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
@@ -122,7 +146,7 @@ export default async function authMiddleware(request: NextRequest) {
   }
 
   // Check if user has a valid session
-  const { data: session } = await betterFetch<Session>(
+  const { data: session } = await betterFetch<SessionData>(
     "/api/auth/get-session",
     {
       baseURL: request.nextUrl.origin,
@@ -138,6 +162,29 @@ export default async function authMiddleware(request: NextRequest) {
     signInUrl.searchParams.set("callbackUrl", pathname)
     const response = NextResponse.redirect(signInUrl)
     return addSecurityHeaders(response)
+  }
+
+  // Check admin route access - verify role from database via API
+  if (isAdminRoute(pathname)) {
+    // First try session role, then fall back to database check
+    if (!isAdmin(session.user)) {
+      // Session doesn't have admin role - check database directly
+      const { data: adminCheck } = await betterFetch<{ isAdmin: boolean }>(
+        "/api/auth/check-admin",
+        {
+          baseURL: request.nextUrl.origin,
+          headers: {
+            cookie: request.headers.get("cookie") || "",
+          },
+        }
+      )
+
+      if (!adminCheck?.isAdmin) {
+        const dashboardUrl = new URL("/dashboard", request.nextUrl.origin)
+        const response = NextResponse.redirect(dashboardUrl)
+        return addSecurityHeaders(response)
+      }
+    }
   }
 
   const response = NextResponse.next()

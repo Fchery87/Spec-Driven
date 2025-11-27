@@ -52,11 +52,14 @@ const envSchema = z.object({
   // Optional: Redis for rate limiting
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),
 
-  // Optional: R2 Storage (Cloudflare)
+  // Optional: R2 Storage (Cloudflare) - support both naming conventions
   R2_ACCOUNT_ID: z.string().optional(),
   R2_ACCESS_KEY_ID: z.string().optional(),
   R2_SECRET_ACCESS_KEY: z.string().optional(),
   R2_BUCKET_NAME: z.string().optional(),
+  CLOUDFLARE_ACCOUNT_ID: z.string().optional(),
+  CLOUDFLARE_ACCESS_KEY_ID: z.string().optional(),
+  CLOUDFLARE_SECRET_ACCESS_KEY: z.string().optional(),
 
   // Optional: AWS S3 (legacy)
   S3_BUCKET: z.string().optional(),
@@ -162,6 +165,6 @@ if (env.NODE_ENV === 'production') {
     geminiApiKeyConfigured: !!env.GEMINI_API_KEY,
     sentryConfigured: !!env.SENTRY_DSN,
     redisConfigured: !!env.UPSTASH_REDIS_REST_URL,
-    r2Configured: !!(env.R2_ACCOUNT_ID && env.R2_ACCESS_KEY_ID),
+    r2Configured: !!((env.R2_ACCOUNT_ID || env.CLOUDFLARE_ACCOUNT_ID) && (env.R2_ACCESS_KEY_ID || env.CLOUDFLARE_ACCESS_KEY_ID)),
   });
 }

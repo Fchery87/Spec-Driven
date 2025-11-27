@@ -3,6 +3,11 @@ import { betterFetch } from '@better-fetch/fetch';
 import { logger } from '@/lib/logger';
 
 /**
+ * User role type
+ */
+export type UserRole = 'user' | 'admin' | 'super_admin';
+
+/**
  * Better Auth session type - includes user and session data
  */
 export interface AuthSession {
@@ -12,6 +17,7 @@ export interface AuthSession {
     emailVerified: boolean;
     name?: string;
     image?: string;
+    role?: UserRole;
     createdAt: Date;
     updatedAt: Date;
   };
@@ -80,6 +86,60 @@ export function withAuth(
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
+      );
+    }
+
+    return handler(request, context, session);
+  };
+}
+
+/**
+ * Check if user has admin role
+ */
+export function isAdmin(session: AuthSession): boolean {
+  if (!session.user.role) return false;
+  return session.user.role === 'admin' || session.user.role === 'super_admin';
+}
+
+/**
+ * Check if user has super admin role
+ */
+export function isSuperAdmin(session: AuthSession): boolean {
+  return session.user.role === 'super_admin';
+}
+
+/**
+ * Higher-order function to wrap API route handlers with admin protection
+ */
+export function withAdminAuth(
+  handler: (
+    request: NextRequest,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    context: any,
+    session: AuthSession
+  ) => Promise<Response | NextResponse>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): (request: NextRequest, context: any) => Promise<Response | NextResponse> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return async (request: NextRequest, context: any) => {
+    const session = await requireAuth(request);
+
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    if (!isAdmin(session)) {
+      logger.warn('Non-admin user attempted admin API access', {
+        userId: session.user.id,
+        email: session.user.email,
+        path: request.nextUrl.pathname,
+      });
+      return NextResponse.json(
+        { success: false, error: 'Forbidden: Admin access required' },
+        { status: 403 }
       );
     }
 

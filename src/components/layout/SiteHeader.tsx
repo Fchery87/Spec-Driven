@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, X, LogOut, User, LayoutDashboard, PlusCircle, Home } from "lucide-react"
+import { Menu, X, LogOut, User, LayoutDashboard, PlusCircle, Home, Shield } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { signOut, useSession } from "@/lib/auth-client"
@@ -29,11 +29,30 @@ export function SiteHeader({ className }: SiteHeaderProps) {
   const [isSigningOut, setIsSigningOut] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   const { logError } = useLogger("SiteHeader")
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Check admin status when authenticated
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (!data?.session) {
+        setIsAdmin(false)
+        return
+      }
+      try {
+        const response = await fetch('/api/auth/check-admin')
+        const result = await response.json()
+        setIsAdmin(result.isAdmin === true)
+      } catch {
+        setIsAdmin(false)
+      }
+    }
+    checkAdmin()
+  }, [data?.session])
 
   const isAuthenticated = Boolean(data?.session)
   const userLabel = data?.user
@@ -99,6 +118,19 @@ export function SiteHeader({ className }: SiteHeaderProps) {
             <div className="h-9 w-24 animate-pulse rounded-lg bg-muted" aria-hidden="true" />
           ) : isAuthenticated ? (
             <div className="hidden items-center gap-2 md:flex">
+              {isAdmin && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  asChild
+                  className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+                >
+                  <Link href="/admin">
+                    <Shield className="h-4 w-4" />
+                    Admin
+                  </Link>
+                </Button>
+              )}
               {userLabel && (
                 <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/30 px-3 py-1.5">
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10">
@@ -182,6 +214,16 @@ export function SiteHeader({ className }: SiteHeaderProps) {
                       </div>
                       <span className="text-sm font-medium text-foreground">{userLabel}</span>
                     </div>
+                  )}
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      className="flex items-center gap-3 rounded-xl bg-primary/10 px-4 py-3 text-sm font-medium text-primary transition-colors hover:bg-primary/20"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      <Shield className="h-5 w-5" />
+                      Admin Portal
+                    </Link>
                   )}
                   <Button
                     size="sm"
