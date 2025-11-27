@@ -274,7 +274,7 @@ async function executeArchitectAgent(
       brief: projectBrief,
       prd: prd,
       phase: 'spec',
-      stackChoice: stackChoice || 'nextjs_only_expo',
+      stackChoice: stackChoice || 'web_application',
       projectName: projectName || 'Untitled Project'
     };
   } else {
@@ -283,7 +283,7 @@ async function executeArchitectAgent(
       brief: projectBrief,
       prd: prd,
       phase: 'solutioning',
-      stackChoice: stackChoice || 'nextjs_only_expo',
+      stackChoice: stackChoice || 'web_application',
       projectName: projectName || 'Untitled Project'
     };
   }
@@ -494,7 +494,7 @@ async function executeDevOpsAgent(
   llmClient: GeminiClient,
   configLoader: ConfigLoader,
   prd: string,
-  stackChoice: string = 'nextjs_only_expo',
+  stackChoice: string = 'web_application',
   projectName?: string
 ): Promise<Record<string, string>> {
   logger.info('[DEPENDENCIES] Executing DevOps Agent');
@@ -583,5 +583,5 @@ export async function getDevOpsExecutor(
 ): Promise<Record<string, string>> {
   const configLoader = new ConfigLoader();
   const prd = artifacts['SPEC/PRD.md'] || '';
-  return executeDevOpsAgent(llmClient, configLoader, prd, stackChoice || 'nextjs_only_expo', projectName);
+  return executeDevOpsAgent(llmClient, configLoader, prd, stackChoice || 'web_application', projectName);
 }

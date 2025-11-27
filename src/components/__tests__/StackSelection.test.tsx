@@ -1,6 +1,6 @@
+import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StackSelection } from '@/components/orchestration/StackSelection';
 
@@ -11,337 +11,211 @@ describe('StackSelection Component', () => {
     vi.clearAllMocks();
   });
 
-  describe('Platform Selection', () => {
-    it('should render platform selection buttons', () => {
-      render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
-      );
+  describe('Architecture Pattern Display', () => {
+    it('should render all three architecture patterns', () => {
+      render(<StackSelection onStackSelect={mockOnStackSelect} />);
 
-      expect(screen.getByRole('button', { name: /Web App Only/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Mobile App/i })).toBeInTheDocument();
+      expect(screen.getByText('Web Application')).toBeInTheDocument();
+      expect(screen.getByText('Mobile Application')).toBeInTheDocument();
+      expect(screen.getByText('API-First Platform')).toBeInTheDocument();
     });
 
-    it('should display initial UI without stacks before platform selection', () => {
-      render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
-      );
+    it('should display pattern descriptions', () => {
+      render(<StackSelection onStackSelect={mockOnStackSelect} />);
 
-      expect(screen.getByText(/Choose Your Project Type/i)).toBeInTheDocument();
-      expect(screen.queryByText(/Technology Stack Selection/i)).not.toBeInTheDocument();
+      expect(screen.getByText(/Single unified codebase with integrated API layer/i)).toBeInTheDocument();
+      expect(screen.getByText(/Cross-platform native apps/i)).toBeInTheDocument();
+      expect(screen.getByText(/Headless architecture serving multiple clients/i)).toBeInTheDocument();
     });
 
-    it('should show stacks when web platform is selected', async () => {
-      const user = userEvent.setup();
-      render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
-      );
+    it('should display stack examples for each pattern', () => {
+      render(<StackSelection onStackSelect={mockOnStackSelect} />);
 
-      const webButton = screen.getByRole('button', { name: /Web App Only/i });
-      await user.click(webButton);
-
-      await waitFor(() => {
-        expect(screen.getByText(/Choose Your Technology Stack/i)).toBeInTheDocument();
-        expect(screen.getByText(/Next.js Full-Stack/i)).toBeInTheDocument();
-      });
+      expect(screen.getByText('Next.js + Drizzle')).toBeInTheDocument();
+      expect(screen.getByText('React Native + Expo')).toBeInTheDocument();
+      expect(screen.getByText('Node.js/Go/Rust API')).toBeInTheDocument();
     });
 
-    it('should show mobile stacks when mobile platform is selected', async () => {
-      const user = userEvent.setup();
-      render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
-      );
+    it('should show pattern type badges', () => {
+      render(<StackSelection onStackSelect={mockOnStackSelect} />);
 
-      const mobileButton = screen.getByRole('button', { name: /Mobile App/i });
-      await user.click(mobileButton);
-
-      await waitFor(() => {
-        expect(screen.getByText(/Next.js \+ Expo/i)).toBeInTheDocument();
-        expect(screen.getByText(/Hybrid Next.js \+ FastAPI \+ Expo/i)).toBeInTheDocument();
-      });
+      expect(screen.getByText('Monolithic Full-Stack')).toBeInTheDocument();
+      expect(screen.getByText('Mobile-First')).toBeInTheDocument();
+      expect(screen.getByText('Headless/Multi-Client')).toBeInTheDocument();
     });
   });
 
-  describe('Stack Selection - Web Stacks', () => {
-    it('should display all web stack options when web platform selected', async () => {
-      const user = userEvent.setup();
-      render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
-      );
+  describe('Stack Selection', () => {
+    it('should call onStackSelect when web application is clicked', async () => {
+      render(<StackSelection onStackSelect={mockOnStackSelect} />);
 
-      await user.click(screen.getByRole('button', { name: /Web App Only/i }));
+      const webCard = screen.getByText('Web Application').closest('[class*="cursor-pointer"]');
+      if (webCard) {
+        fireEvent.click(webCard);
+      }
 
       await waitFor(() => {
-        expect(screen.getByText(/Next.js Full-Stack/i)).toBeInTheDocument();
-        expect(screen.getByText(/Hybrid Next.js \+ FastAPI/i)).toBeInTheDocument();
+        expect(mockOnStackSelect).toHaveBeenCalledWith('web_application', '');
       });
     });
 
-    it('should show stack composition details', async () => {
-      const user = userEvent.setup();
-      render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
-      );
+    it('should call onStackSelect when mobile application is clicked', async () => {
+      render(<StackSelection onStackSelect={mockOnStackSelect} />);
 
-      await user.click(screen.getByRole('button', { name: /Web App Only/i }));
+      const mobileCard = screen.getByText('Mobile Application').closest('[class*="cursor-pointer"]');
+      if (mobileCard) {
+        fireEvent.click(mobileCard);
+      }
 
       await waitFor(() => {
-        expect(screen.getByText(/Technology Composition/i)).toBeInTheDocument();
-        expect(screen.getByText(/Next.js 14/i)).toBeInTheDocument();
+        expect(mockOnStackSelect).toHaveBeenCalledWith('mobile_application', '');
       });
     });
 
-    it('should highlight selected stack', async () => {
-      const user = userEvent.setup();
+    it('should call onStackSelect when API-first platform is clicked', async () => {
+      render(<StackSelection onStackSelect={mockOnStackSelect} />);
+
+      const apiCard = screen.getByText('API-First Platform').closest('[class*="cursor-pointer"]');
+      if (apiCard) {
+        fireEvent.click(apiCard);
+      }
+
+      await waitFor(() => {
+        expect(mockOnStackSelect).toHaveBeenCalledWith('api_first_platform', '');
+      });
+    });
+
+    it('should highlight selected stack with ring styling', () => {
       render(
         <StackSelection
-          selectedStack="nextjs_only_web"
+          selectedStack="web_application"
           onStackSelect={mockOnStackSelect}
         />
       );
 
-      await user.click(screen.getByRole('button', { name: /Web App Only/i }));
-
-      await waitFor(() => {
-        const selectedCard = screen.getByText(/Next.js Full-Stack/i).closest('[class*="ring"]');
-        expect(selectedCard).toHaveClass('ring-2');
-      });
+      const selectedCard = screen.getByText('Web Application').closest('[class*="ring-2"]');
+      expect(selectedCard).toBeInTheDocument();
     });
 
-    it('should call onStackSelect when stack card is clicked', async () => {
-      const user = userEvent.setup();
+    it('should show checkmark on selected stack', () => {
       render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
+        <StackSelection
+          selectedStack="mobile_application"
+          onStackSelect={mockOnStackSelect}
+        />
       );
 
-      await user.click(screen.getByRole('button', { name: /Web App Only/i }));
-
-      await waitFor(() => {
-        const stackCard = screen.getByText(/Next.js Full-Stack/i).closest('[class*="cursor-pointer"]');
-        expect(stackCard).toBeInTheDocument();
-      });
-
-      const stackCard = screen.getByText(/Next.js Full-Stack/i).closest('[class*="cursor-pointer"]');
-      if (stackCard) {
-        fireEvent.click(stackCard);
-      }
-
-      await waitFor(() => {
-        expect(mockOnStackSelect).toHaveBeenCalled();
-      });
+      const mobileCard = screen.getByText('Mobile Application').closest('[class*="cursor-pointer"]');
+      const checkmark = mobileCard?.querySelector('svg.text-emerald-500');
+      expect(checkmark).toBeInTheDocument();
     });
   });
 
-  describe('Stack Selection - Mobile Stacks', () => {
-    it('should display all mobile stack options when mobile platform selected', async () => {
-      const user = userEvent.setup();
-      render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
-      );
+  describe('Custom Architecture Option', () => {
+    it('should display custom architecture section', () => {
+      render(<StackSelection onStackSelect={mockOnStackSelect} />);
 
-      await user.click(screen.getByRole('button', { name: /Mobile App/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Next.js \+ Expo/i)).toBeInTheDocument();
-        expect(screen.getByText(/Hybrid Next.js \+ FastAPI \+ Expo/i)).toBeInTheDocument();
-      });
+      expect(screen.getByText('Custom Architecture')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Define Custom Architecture/i })).toBeInTheDocument();
     });
 
-    it('should show mobile-specific composition', async () => {
+    it('should show input when define custom is clicked', async () => {
       const user = userEvent.setup();
-      render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
-      );
+      render(<StackSelection onStackSelect={mockOnStackSelect} />);
 
-      await user.click(screen.getByRole('button', { name: /Mobile App/i }));
+      await user.click(screen.getByRole('button', { name: /Define Custom Architecture/i }));
 
-      await waitFor(() => {
-        expect(screen.getByText(/Expo with React Native/i)).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Custom Stack Option', () => {
-    it('should show custom stack option after platform selection', async () => {
-      const user = userEvent.setup();
-      render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
-      );
-
-      await user.click(screen.getByRole('button', { name: /Web App Only/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Custom Stack/i)).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /Define Custom Stack/i })).toBeInTheDocument();
-      });
+      expect(screen.getByPlaceholderText(/Describe your custom architecture/i)).toBeInTheDocument();
     });
 
-    it('should toggle custom stack input when clicked', async () => {
+    it('should allow custom architecture input', async () => {
       const user = userEvent.setup();
-      render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
-      );
+      render(<StackSelection onStackSelect={mockOnStackSelect} />);
 
-      await user.click(screen.getByRole('button', { name: /Web App Only/i }));
+      await user.click(screen.getByRole('button', { name: /Define Custom Architecture/i }));
 
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Define Custom Stack/i })).toBeInTheDocument();
-      });
+      const input = screen.getByPlaceholderText(/Describe your custom architecture/i);
+      await user.type(input, 'Serverless with Edge Functions');
 
-      const customButton = screen.getByRole('button', { name: /Define Custom Stack/i });
-      await user.click(customButton);
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText(/Describe your custom web stack/i)).toBeInTheDocument();
-      });
+      expect(input).toHaveValue('Serverless with Edge Functions');
     });
 
-    it('should allow custom stack input', async () => {
+    it('should call onStackSelect with custom when submitted', async () => {
       const user = userEvent.setup();
-      render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
-      );
+      render(<StackSelection onStackSelect={mockOnStackSelect} />);
 
-      await user.click(screen.getByRole('button', { name: /Web App Only/i }));
-      await user.click(screen.getByRole('button', { name: /Define Custom Stack/i }));
+      await user.click(screen.getByRole('button', { name: /Define Custom Architecture/i }));
 
-      const input = screen.getByPlaceholderText(/Describe your custom web stack/i);
-      await user.type(input, 'React + Django + PostgreSQL');
-
-      expect(input).toHaveValue('React + Django + PostgreSQL');
-    });
-
-    it('should enable custom stack submit button when input filled', async () => {
-      const user = userEvent.setup();
-      render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
-      );
-
-      await user.click(screen.getByRole('button', { name: /Web App Only/i }));
-      await user.click(screen.getByRole('button', { name: /Define Custom Stack/i }));
-
-      const input = screen.getByPlaceholderText(/Describe your custom web stack/i);
+      const input = screen.getByPlaceholderText(/Describe your custom architecture/i);
       await user.type(input, 'Custom Stack');
+      await user.click(screen.getByRole('button', { name: /Use Custom Architecture/i }));
 
-      const submitButton = screen.getByRole('button', { name: /Use Custom Stack/i });
-      expect(submitButton).not.toBeDisabled();
+      expect(mockOnStackSelect).toHaveBeenCalledWith('custom', '');
     });
 
-    it('should call onStackSelect with custom when custom stack submitted', async () => {
+    it('should disable submit button when input is empty', async () => {
       const user = userEvent.setup();
-      render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
-      );
+      render(<StackSelection onStackSelect={mockOnStackSelect} />);
 
-      await user.click(screen.getByRole('button', { name: /Web App Only/i }));
-      await user.click(screen.getByRole('button', { name: /Define Custom Stack/i }));
+      await user.click(screen.getByRole('button', { name: /Define Custom Architecture/i }));
 
-      const input = screen.getByPlaceholderText(/Describe your custom web stack/i);
-      await user.type(input, 'Custom Stack');
-      await user.click(screen.getByRole('button', { name: /Use Custom Stack/i }));
-
-      expect(mockOnStackSelect).toHaveBeenCalledWith('custom', '', 'web');
-    });
-
-    it('should disable custom submit button when input is empty', async () => {
-      const user = userEvent.setup();
-      render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
-      );
-
-      await user.click(screen.getByRole('button', { name: /Web App Only/i }));
-      await user.click(screen.getByRole('button', { name: /Define Custom Stack/i }));
-
-      const submitButton = screen.getByRole('button', { name: /Use Custom Stack/i });
+      const submitButton = screen.getByRole('button', { name: /Use Custom Architecture/i });
       expect(submitButton).toBeDisabled();
     });
 
-    it('should cancel custom stack and clear input', async () => {
+    it('should cancel custom architecture and hide input', async () => {
       const user = userEvent.setup();
-      render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
-      );
+      render(<StackSelection onStackSelect={mockOnStackSelect} />);
 
-      await user.click(screen.getByRole('button', { name: /Web App Only/i }));
-      await user.click(screen.getByRole('button', { name: /Define Custom Stack/i }));
-
-      const input = screen.getByPlaceholderText(/Describe your custom web stack/i);
-      await user.type(input, 'Custom Stack');
+      await user.click(screen.getByRole('button', { name: /Define Custom Architecture/i }));
       await user.click(screen.getByRole('button', { name: /Cancel/i }));
 
-      expect(screen.queryByPlaceholderText(/Describe your custom web stack/i)).not.toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Define Custom Stack/i })).toBeInTheDocument();
+      expect(screen.queryByPlaceholderText(/Describe your custom architecture/i)).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Define Custom Architecture/i })).toBeInTheDocument();
     });
   });
 
   describe('Reasoning Input', () => {
     it('should show reasoning input after stack selection', async () => {
-      const user = userEvent.setup();
       render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
+        <StackSelection
+          selectedStack="web_application"
+          onStackSelect={mockOnStackSelect}
+        />
       );
 
-      await user.click(screen.getByRole('button', { name: /Web App Only/i }));
-
-      const stackCard = screen.getByText(/Next.js Full-Stack/i).closest('[class*="cursor-pointer"]');
-      if (stackCard) {
-        fireEvent.click(stackCard);
-      }
-
-      await waitFor(() => {
-        expect(screen.getByText(/Why did you choose this stack/i)).toBeInTheDocument();
-      });
+      expect(screen.getByText(/Why did you choose this architecture/i)).toBeInTheDocument();
     });
 
     it('should allow reasoning input', async () => {
       const user = userEvent.setup();
       render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
+        <StackSelection
+          selectedStack="web_application"
+          onStackSelect={mockOnStackSelect}
+        />
       );
 
-      await user.click(screen.getByRole('button', { name: /Web App Only/i }));
+      const textarea = screen.getByPlaceholderText(/We chose monolithic because/i);
+      await user.type(textarea, 'Team has TypeScript expertise');
 
-      const stackCard = screen.getByText(/Next.js Full-Stack/i).closest('[class*="cursor-pointer"]');
-      if (stackCard) {
-        fireEvent.click(stackCard);
-      }
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText(/I chose this because/i)).toBeInTheDocument();
-      });
-
-      const textarea = screen.getByPlaceholderText(/I chose this because/i);
-      await user.type(textarea, 'We have TypeScript experience');
-
-      expect(textarea).toHaveValue('We have TypeScript experience');
+      expect(textarea).toHaveValue('Team has TypeScript expertise');
     });
 
-    it('should include reasoning in stack selection callback', async () => {
+    it('should include reasoning when confirming selection', async () => {
       const user = userEvent.setup();
       render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
+        <StackSelection
+          selectedStack="web_application"
+          onStackSelect={mockOnStackSelect}
+        />
       );
 
-      await user.click(screen.getByRole('button', { name: /Web App Only/i }));
+      const textarea = screen.getByPlaceholderText(/We chose monolithic because/i);
+      await user.type(textarea, 'Fast iteration needed');
+      await user.click(screen.getByRole('button', { name: /Confirm Architecture Choice/i }));
 
-      const stackCard = screen.getByText(/Next.js Full-Stack/i).closest('[class*="cursor-pointer"]');
-      if (stackCard) {
-        fireEvent.click(stackCard);
-      }
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText(/I chose this because/i)).toBeInTheDocument();
-      });
-
-      const textarea = screen.getByPlaceholderText(/I chose this because/i);
-      await user.type(textarea, 'Team expertise');
-
-      await user.click(screen.getByRole('button', { name: /Confirm Stack Choice/i }));
-
-      expect(mockOnStackSelect).toHaveBeenCalledWith(
-        'nextjs_only_web',
-        'Team expertise',
-        'web'
-      );
+      expect(mockOnStackSelect).toHaveBeenCalledWith('web_application', 'Fast iteration needed');
     });
   });
 
@@ -349,7 +223,7 @@ describe('StackSelection Component', () => {
     it('should disable confirm button when isLoading is true', () => {
       render(
         <StackSelection
-          selectedStack="nextjs_only_web"
+          selectedStack="web_application"
           onStackSelect={mockOnStackSelect}
           isLoading={true}
         />
@@ -362,7 +236,7 @@ describe('StackSelection Component', () => {
     it('should show loading text when isLoading is true', () => {
       render(
         <StackSelection
-          selectedStack="nextjs_only_web"
+          selectedStack="web_application"
           onStackSelect={mockOnStackSelect}
           isLoading={true}
         />
@@ -370,131 +244,67 @@ describe('StackSelection Component', () => {
 
       expect(screen.getByText(/Confirming/i)).toBeInTheDocument();
     });
-
-    it('should show normal text when isLoading is false', async () => {
-      const user = userEvent.setup();
-      render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
-      );
-
-      await user.click(screen.getByRole('button', { name: /Web App Only/i }));
-
-      const stackCard = screen.getByText(/Next.js Full-Stack/i).closest('[class*="cursor-pointer"]');
-      if (stackCard) {
-        fireEvent.click(stackCard);
-      }
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Confirm Stack Choice/i })).toBeInTheDocument();
-      });
-    });
   });
 
   describe('Selection Summary', () => {
-    it('should show selection summary when stack is selected', async () => {
-      const user = userEvent.setup();
+    it('should show selection summary when stack is selected', () => {
       render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
+        <StackSelection
+          selectedStack="web_application"
+          onStackSelect={mockOnStackSelect}
+        />
       );
 
-      await user.click(screen.getByRole('button', { name: /Web App Only/i }));
-
-      const stackCard = screen.getByText(/Next.js Full-Stack/i).closest('[class*="cursor-pointer"]');
-      if (stackCard) {
-        fireEvent.click(stackCard);
-      }
-
-      await waitFor(() => {
-        expect(screen.getByText(/Selected:/i)).toBeInTheDocument();
-        expect(screen.getByText(/Next.js Full-Stack for web apps/i)).toBeInTheDocument();
-      });
+      expect(screen.getByText(/Selected:/i)).toBeInTheDocument();
+      expect(screen.getByText(/Web Application architecture/i)).toBeInTheDocument();
     });
 
-    it('should not show summary for custom stacks', async () => {
-      const user = userEvent.setup();
-      render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
-      );
+    it('should not show summary when no stack is selected', () => {
+      render(<StackSelection onStackSelect={mockOnStackSelect} />);
 
-      await user.click(screen.getByRole('button', { name: /Web App Only/i }));
-      await user.click(screen.getByRole('button', { name: /Define Custom Stack/i }));
-
-      const input = screen.getByPlaceholderText(/Describe your custom web stack/i);
-      await user.type(input, 'Custom');
-
-      await waitFor(() => {
-        expect(screen.queryByText(/Selected:/i)).not.toBeInTheDocument();
-      });
+      expect(screen.queryByText(/Selected:/i)).not.toBeInTheDocument();
     });
   });
 
   describe('Clear Selection', () => {
     it('should clear selection when clear button clicked', async () => {
       const user = userEvent.setup();
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { rerender } = render(
+      render(
         <StackSelection
-          selectedStack="nextjs_only_web"
+          selectedStack="web_application"
           onStackSelect={mockOnStackSelect}
         />
       );
 
-      await user.click(screen.getByRole('button', { name: /Web App Only/i }));
-
-      const clearButton = screen.getByRole('button', { name: /Clear Selection/i });
-      await user.click(clearButton);
+      await user.click(screen.getByRole('button', { name: /Clear Selection/i }));
 
       expect(mockOnStackSelect).toHaveBeenCalledWith('');
     });
   });
 
-  describe('Platform Switch', () => {
-    it('should clear custom stack when switching platforms', async () => {
-      const user = userEvent.setup();
-      render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
-      );
+  describe('Stack Details Display', () => {
+    it('should display strengths for each pattern', () => {
+      render(<StackSelection onStackSelect={mockOnStackSelect} />);
 
-      await user.click(screen.getByRole('button', { name: /Web App Only/i }));
-      await user.click(screen.getByRole('button', { name: /Define Custom Stack/i }));
-
-      const input = screen.getByPlaceholderText(/Describe your custom web stack/i);
-      await user.type(input, 'Custom Stack');
-
-      await user.click(screen.getByRole('button', { name: /Mobile App/i }));
-
-      await waitFor(() => {
-        expect(screen.queryByDisplayValue('Custom Stack')).not.toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Stack Details', () => {
-    it('should display strengths and trade-offs', async () => {
-      const user = userEvent.setup();
-      render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
-      );
-
-      await user.click(screen.getByRole('button', { name: /Web App Only/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Strengths/i)).toBeInTheDocument();
-        expect(screen.getByText(/Trade-offs/i)).toBeInTheDocument();
-      });
+      expect(screen.getAllByText(/Strengths/i).length).toBeGreaterThan(0);
     });
 
-    it('should display scaling information', async () => {
-      const user = userEvent.setup();
-      render(
-        <StackSelection onStackSelect={mockOnStackSelect} />
-      );
+    it('should display trade-offs for each pattern', () => {
+      render(<StackSelection onStackSelect={mockOnStackSelect} />);
 
-      await user.click(screen.getByRole('button', { name: /Web App Only/i }));
+      expect(screen.getAllByText(/Trade-offs/i).length).toBeGreaterThan(0);
+    });
 
-      await waitFor(() => {
-        expect(screen.getByText(/Scaling/i)).toBeInTheDocument();
-      });
+    it('should display characteristics for each pattern', () => {
+      render(<StackSelection onStackSelect={mockOnStackSelect} />);
+
+      expect(screen.getAllByText(/Characteristics/i).length).toBeGreaterThan(0);
+    });
+
+    it('should display best for section for each pattern', () => {
+      render(<StackSelection onStackSelect={mockOnStackSelect} />);
+
+      expect(screen.getAllByText(/Best For/i).length).toBeGreaterThan(0);
     });
   });
 });

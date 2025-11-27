@@ -18,11 +18,20 @@ export interface Stack {
   name: string;
   description: string;
   composition: {
-    frontend: string;
-    mobile: string;
+    // New architecture pattern format
+    pattern?: string;
+    examples?: string;
+    // Legacy format
+    frontend?: string;
+    mobile?: string;
+    // Common fields
     backend: string;
     database: string;
     deployment: string;
+    // Mobile-specific
+    features?: string;
+    // API-first specific
+    clients?: string;
   };
   best_for: string[];
   strengths: string[];

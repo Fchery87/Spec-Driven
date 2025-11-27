@@ -529,6 +529,28 @@ The entire project is documented. No guessing needed. Good luck! 🎯
     if (!stackChoice) return 'No stack selected';
     
     const stackDescriptions: Record<string, string> = {
+      'web_application': `
+**Pattern:** Monolithic Full-Stack
+**Examples:** Next.js + Drizzle, Django, React, Tanstack Start
+**Backend:** Integrated API layer
+**Database:** PostgreSQL/SQLite with ORM
+**Deployment:** Single deployment target (Vercel, Railway)`,
+      
+      'mobile_application': `
+**Pattern:** Mobile-First with API Backend
+**Examples:** React Native + Expo, Flutter + Firebase
+**Backend:** Dedicated API service
+**Features:** Push notifications, offline support, device access
+**Deployment:** App stores + cloud API`,
+      
+      'api_first_platform': `
+**Pattern:** Headless/Multi-Client Architecture
+**Examples:** Node.js/Go/Rust API, GraphQL federation
+**Clients:** Separate web, mobile, third-party integrations
+**Features:** SDK/CLI tooling, webhooks, multi-tenant
+**Deployment:** Independent service scaling`,
+
+      // Legacy support
       'nextjs_only_expo': `
 **Frontend:** Next.js 14 with App Router
 **Mobile:** Expo with React Native  
@@ -541,7 +563,19 @@ The entire project is documented. No guessing needed. Good luck! 🎯
 **Mobile:** Expo with React Native
 **Backend:** FastAPI (Python)
 **Database:** PostgreSQL with SQLAlchemy
-**Deployment:** Separate infra`
+**Deployment:** Separate infra`,
+
+      'monolithic_fullstack': `
+**Pattern:** Monolithic Full-Stack
+**Backend:** Integrated API layer
+**Database:** PostgreSQL/SQLite with ORM
+**Deployment:** Single deployment target`,
+
+      'decoupled_services': `
+**Pattern:** Decoupled Services
+**Backend:** Separate API service
+**Database:** PostgreSQL with independent scaling
+**Deployment:** Multiple deployment targets`
     };
     
     return stackDescriptions[stackChoice] || 'Custom stack configuration';
@@ -564,8 +598,14 @@ The entire project is documented. No guessing needed. Good luck! 🎯
     if (!stackChoice) return 'No stack selected - choose appropriate technologies';
     
     const stackConstraints: Record<string, string> = {
+      'web_application': 'Next.js/Django/React, TypeScript/Python, PostgreSQL/SQLite, Drizzle/Prisma ORM',
+      'mobile_application': 'React Native + Expo / Flutter, TypeScript/Dart, Firebase/Supabase, Push notifications',
+      'api_first_platform': 'Node.js/Go/Rust API, GraphQL/REST, PostgreSQL, Independent client apps',
+      // Legacy support
       'nextjs_only_expo': 'Next.js 14 (App Router), React 18, TypeScript, Expo, Prisma, PostgreSQL',
-      'hybrid_nextjs_fastapi_expo': 'Next.js 14, FastAPI (Python), React 18, TypeScript, Expo, SQLAlchemy, PostgreSQL'
+      'hybrid_nextjs_fastapi_expo': 'Next.js 14, FastAPI (Python), React 18, TypeScript, Expo, SQLAlchemy, PostgreSQL',
+      'monolithic_fullstack': 'Full-stack framework, TypeScript, PostgreSQL, Integrated API',
+      'decoupled_services': 'Separate frontend/backend, Independent scaling, API contracts'
     };
     
     return stackConstraints[stackChoice] || 'Custom stack - follow project specifications';

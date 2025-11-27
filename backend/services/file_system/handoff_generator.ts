@@ -32,12 +32,17 @@ export class HandoffGenerator {
     }
 
     // Extract tech stack info
-    let techStack = stackChoice;
-    if (stackChoice === 'nextjs_only_expo') {
-      techStack = 'Next.js 14 + Expo (React Native)';
-    } else if (stackChoice === 'hybrid_nextjs_fastapi_expo') {
-      techStack = 'Next.js 14 + FastAPI + Expo';
-    }
+    const stackDescriptions: Record<string, string> = {
+      'web_application': 'Web Application (Monolithic Full-Stack)',
+      'mobile_application': 'Mobile Application (Cross-Platform Native)',
+      'api_first_platform': 'API-First Platform (Headless/Multi-Client)',
+      // Legacy support
+      'nextjs_only_expo': 'Next.js 14 + Expo (React Native)',
+      'hybrid_nextjs_fastapi_expo': 'Next.js 14 + FastAPI + Expo',
+      'monolithic_fullstack': 'Web Application (Monolithic Full-Stack)',
+      'decoupled_services': 'API-First Platform (Headless/Multi-Client)'
+    };
+    const techStack = stackDescriptions[stackChoice] || stackChoice;
 
     return `# ${name}
 

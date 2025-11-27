@@ -159,9 +159,59 @@ export class ConfigLoader {
         }
       },
       stacks: {
+        // New 3-option architecture patterns
+        web_application: {
+          id: 'web_application',
+          name: 'Web Application',
+          description: 'Single unified codebase with integrated API layer for browser-based apps',
+          composition: {
+            pattern: 'Monolithic Full-Stack',
+            examples: 'Next.js + Drizzle, Django, React, Tanstack Start',
+            backend: 'Integrated API layer',
+            database: 'PostgreSQL/SQLite with ORM',
+            deployment: 'Single target (Vercel, Railway)'
+          },
+          best_for: ['SaaS dashboards', 'admin panels', 'internal tools', 'content platforms', 'MVPs'],
+          strengths: ['Single language ecosystem', 'unified codebase', 'fast iteration', 'low operational overhead'],
+          tradeoffs: ['Less suitable for heavy background compute', 'tightly coupled frontend/backend'],
+          scaling: 'Good for <10k DAU'
+        },
+        mobile_application: {
+          id: 'mobile_application',
+          name: 'Mobile Application',
+          description: 'Cross-platform native apps with dedicated API backend',
+          composition: {
+            pattern: 'Mobile-First with API Backend',
+            examples: 'React Native + Expo, Flutter + Firebase, Swift/Kotlin native',
+            backend: 'Dedicated API service',
+            database: 'Firebase/Supabase or custom API',
+            deployment: 'App stores + cloud API'
+          },
+          best_for: ['Consumer apps', 'offline-first', 'push notifications', 'device features', 'location-based'],
+          strengths: ['Native device access', 'offline support', 'push notifications', 'app store distribution'],
+          tradeoffs: ['App store review process', 'iOS/Android considerations', 'device fragmentation'],
+          scaling: 'Good for 100k+ users'
+        },
+        api_first_platform: {
+          id: 'api_first_platform',
+          name: 'API-First Platform',
+          description: 'Headless architecture serving multiple clients and integrations',
+          composition: {
+            pattern: 'Headless/Multi-Client',
+            examples: 'Node.js/Go/Rust API, GraphQL federation, Serverless',
+            backend: 'Standalone API service',
+            database: 'PostgreSQL with independent scaling',
+            deployment: 'Independent service scaling'
+          },
+          best_for: ['Multi-platform products', 'developer APIs', 'B2B integrations', 'marketplaces', 'SDK/CLI tooling'],
+          strengths: ['Single API for all clients', 'webhook integrations', 'multi-tenant ready', 'technology flexibility'],
+          tradeoffs: ['Increased operational complexity', 'API contract management', 'higher initial setup cost'],
+          scaling: 'Good for 100k+ DAU, B2B'
+        },
+        // Legacy support
         nextjs_only_expo: {
           id: 'nextjs_only_expo',
-          name: 'Next.js-Only + Expo',
+          name: 'Next.js-Only + Expo (Legacy)',
           description: 'Unified TypeScript codebase with Next.js App Router and Expo mobile',
           composition: {
             frontend: 'Next.js 14 (App Router)',
@@ -177,7 +227,7 @@ export class ConfigLoader {
         },
         hybrid_nextjs_fastapi_expo: {
           id: 'hybrid_nextjs_fastapi_expo',
-          name: 'Hybrid Next.js + FastAPI + Expo',
+          name: 'Hybrid Next.js + FastAPI + Expo (Legacy)',
           description: 'Decoupled services with Python backend for heavy compute',
           composition: {
             frontend: 'Next.js 14',
