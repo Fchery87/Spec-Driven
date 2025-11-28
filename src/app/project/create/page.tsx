@@ -39,7 +39,15 @@ export default function CreateProject() {
         // Redirect to project workflow page
         router.push(`/project/${result.data.slug}`);
       } else {
-        setError(result.error || 'Failed to create project');
+        // Show detailed validation errors if available
+        if (result.details) {
+          const errorMessages = Object.entries(result.details)
+            .map(([field, messages]) => `${field}: ${(messages as string[]).join(', ')}`)
+            .join('; ');
+          setError(errorMessages || result.error || 'Failed to create project');
+        } else {
+          setError(result.error || 'Failed to create project');
+        }
       }
     } catch (err) {
       setError('Failed to create project');
@@ -82,11 +90,17 @@ export default function CreateProject() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   disabled={loading}
+                  maxLength={100}
                   className="w-full"
                 />
-                <p className="text-xs text-muted-foreground">
-                  A clear, descriptive name for your project
-                </p>
+                <div className="flex justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    A clear, descriptive name for your project
+                  </p>
+                  <p className={`text-xs ${name.length > 80 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                    {name.length}/100
+                  </p>
+                </div>
               </div>
 
               {/* Description */}
@@ -100,11 +114,17 @@ export default function CreateProject() {
                   onChange={(e) => setDescription(e.target.value)}
                   disabled={loading}
                   rows={4}
+                  maxLength={5000}
                   className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Optional: Helps provide context during spec generation
-                </p>
+                <div className="flex justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    Optional: Helps provide context during spec generation
+                  </p>
+                  <p className={`text-xs ${description.length > 4500 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                    {description.length}/5000
+                  </p>
+                </div>
               </div>
 
               {/* Error */}
