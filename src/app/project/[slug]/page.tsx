@@ -216,7 +216,16 @@ export default function ProjectPage() {
   const handleStackApprove = async (
     stackChoice: string,
     reasoning?: string,
-    technicalPreferences?: Record<string, string>
+    technicalPreferences?: {
+      state_management?: string;
+      data_fetching?: string;
+      forms?: string;
+      validation?: string;
+      http_client?: string;
+      testing?: string;
+      e2e_testing?: string;
+      animation?: string;
+    }
   ) => {
     try {
       // Determine mode based on stack choice
