@@ -95,7 +95,11 @@ ${slug}/
 | [HANDOFF.md](./HANDOFF.md) | Complete handoff document for LLM code generation |
 | [constitution.md](./specs/ANALYSIS/constitution.md) | Project guiding principles |
 | [project-brief.md](./specs/ANALYSIS/project-brief.md) | Project overview and requirements |
+| [stack-decision.md](./specs/STACK_SELECTION/stack-decision.md) | Technology stack selection |
 | [PRD.md](./specs/SPEC/PRD.md) | Product Requirements Document |
+| [design-system.md](./specs/SPEC/design-system.md) | Design tokens and UI guidelines |
+| [component-inventory.md](./specs/SPEC/component-inventory.md) | UI component specifications |
+| [user-flows.md](./specs/SPEC/user-flows.md) | User journey definitions |
 | [architecture.md](./specs/SOLUTIONING/architecture.md) | System architecture |
 | [tasks.md](./specs/SOLUTIONING/tasks.md) | Implementation task breakdown |
 
@@ -165,16 +169,30 @@ This is an auto-generated handoff document containing all project specifications
 
 This document should be read in the following order for best understanding:
 
+### Phase 1: Project Foundation (ANALYSIS)
 1. **constitution.md** - Project philosophy and guiding principles
 2. **project-brief.md** - High-level overview and context
 3. **personas.md** - User personas and target audience
-4. **PRD.md** - Product requirements and features
-5. **data-model.md** - Database schema and data structures
-6. **api-spec.json** or **api-spec.md** - API endpoints and contracts
-7. **DEPENDENCIES.md** - Required packages and dependencies
-8. **architecture.md** - System architecture and design patterns
-9. **epics.md** - Feature epics and logical groupings
-10. **tasks.md** - Detailed implementation tasks with dependencies
+
+### Phase 2: Stack Decision (STACK_SELECTION)
+4. **stack-decision.md** - Chosen technology stack and composition
+5. **stack-rationale.md** - Why this stack was selected, alternatives considered
+
+### Phase 3: Specifications (SPEC)
+6. **PRD.md** - Product requirements and features
+7. **data-model.md** - Database schema and data structures
+8. **api-spec.json** - API endpoints and contracts
+9. **design-system.md** - Colors, typography, spacing, motion tokens (follow fire-your-design-team.md principles)
+10. **component-inventory.md** - UI components mapped to shadcn/ui
+11. **user-flows.md** - Key user journeys and interactions
+
+### Phase 4: Dependencies (DEPENDENCIES)
+12. **DEPENDENCIES.md** - Required packages and dependencies
+
+### Phase 5: Implementation Plan (SOLUTIONING)
+13. **architecture.md** - System architecture and design patterns
+14. **epics.md** - Feature epics and logical groupings
+15. **tasks.md** - Detailed implementation tasks with dependencies
 
 ---
 
@@ -216,8 +234,16 @@ Please review the attached specifications in the order listed above, then:
 - Implement all API endpoints in api-spec
 - Include all database tables from data-model
 - Satisfy all requirements in PRD.md
-- Use the specified technology stack
+- Use the specified technology stack from stack-decision.md
 - Follow security baseline requirements
+- **Design System**: Implement UI following design-system.md exactly:
+  - Use ONLY the 4 typography sizes defined (body, label, heading, display)
+  - Use ONLY 8pt grid spacing values (8, 16, 24, 32, 48, 64)
+  - Follow the 60/30/10 color rule with project-specific colors
+  - Use Framer Motion with the defined duration scale for animations
+  - Use shadcn/ui components as specified in component-inventory.md
+  - Implement user journeys exactly as defined in user-flows.md
+  - AVOID: purple defaults, gradient blobs, Inter font, excessive border radius
 
 **Output:**
 Return a complete, production-ready codebase with all source files, configuration, and documentation.
@@ -245,6 +271,26 @@ ${artifacts['ANALYSIS/project-brief.md'] || 'Project brief document not availabl
 ${artifacts['ANALYSIS/personas.md'] || 'Personas document not available'}
 \`\`\`
 
+---
+
+## Stack Selection
+
+### Stack Decision
+
+\`\`\`markdown
+${artifacts['STACK_SELECTION/stack-decision.md'] || 'Stack decision document not available'}
+\`\`\`
+
+### Stack Rationale
+
+\`\`\`markdown
+${artifacts['STACK_SELECTION/stack-rationale.md'] || 'Stack rationale document not available'}
+\`\`\`
+
+---
+
+## Specifications
+
 ### Product Requirements Document (PRD)
 
 \`\`\`markdown
@@ -262,6 +308,28 @@ ${artifacts['SPEC/data-model.md'] || 'Data model document not available'}
 \`\`\`json
 ${artifacts['SPEC/api-spec.json'] || artifacts['SPEC/api-spec.md'] || 'API specification not available'}
 \`\`\`
+
+### Design System
+
+\`\`\`markdown
+${artifacts['SPEC/design-system.md'] || 'Design system document not available'}
+\`\`\`
+
+### Component Inventory
+
+\`\`\`markdown
+${artifacts['SPEC/component-inventory.md'] || 'Component inventory document not available'}
+\`\`\`
+
+### User Flows
+
+\`\`\`markdown
+${artifacts['SPEC/user-flows.md'] || 'User flows document not available'}
+\`\`\`
+
+---
+
+## Dependencies
 
 ### Dependencies
 
