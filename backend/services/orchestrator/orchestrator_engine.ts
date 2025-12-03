@@ -17,7 +17,8 @@ import {
   getPMExecutor,
   getArchitectExecutor,
   getScruMasterExecutor,
-  getDevOpsExecutor
+  getDevOpsExecutor,
+  getDesignExecutor
 } from '../llm/agent_executors';
 import { GeminiClient } from '../llm/llm_client';
 
@@ -263,7 +264,11 @@ export class OrchestratorEngine {
           break;
 
         case 'SPEC':
-          // SPEC phase has two owners: PM (generates PRD) and Architect (generates data-model and api-spec)
+          // SPEC phase has three parts:
+          // 1. PM generates PRD
+          // 2. Architect generates data-model and api-spec
+          // 3. Design generates design-system, component-inventory, user-flows
+          
           // First generate PRD with PM
           const prdArtifacts = await getPMExecutor(
             llmClient,
@@ -278,8 +283,7 @@ export class OrchestratorEngine {
             hasContent: !!prdArtifacts['PRD.md']?.trim()
           });
 
-          // Then generate data model and API spec with Architect
-          // Add the newly generated PRD to artifacts for Architect to use
+          // Add the newly generated PRD to artifacts for subsequent agents
           const artifactsWithPRD: Record<string, string> = {
             ...artifacts,
             'SPEC/PRD.md': prdArtifacts['PRD.md'] || ''
@@ -290,14 +294,23 @@ export class OrchestratorEngine {
             briefLength: artifacts['ANALYSIS/project-brief.md']?.length || 0
           });
 
-          const architectArtifacts = await getArchitectExecutor(
-            llmClient,
-            projectId,
-            artifactsWithPRD,
-            'SPEC',
-            stackChoice,
-            projectName
-          );
+          // Generate data model, API spec, and design artifacts in parallel
+          const [architectArtifacts, designArtifacts] = await Promise.all([
+            getArchitectExecutor(
+              llmClient,
+              projectId,
+              artifactsWithPRD,
+              'SPEC',
+              stackChoice,
+              projectName
+            ),
+            getDesignExecutor(
+              llmClient,
+              projectId,
+              artifactsWithPRD,
+              projectName
+            )
+          ]);
 
           logger.debug('[SPEC] Architect generation complete', {
             dataModelLength: architectArtifacts['data-model.md']?.length || 0,
@@ -306,10 +319,17 @@ export class OrchestratorEngine {
             hasApiSpec: !!architectArtifacts['api-spec.json']?.trim()
           });
 
+          logger.debug('[SPEC] Design generation complete', {
+            designSystemLength: designArtifacts['design-system.md']?.length || 0,
+            componentInventoryLength: designArtifacts['component-inventory.md']?.length || 0,
+            userFlowsLength: designArtifacts['user-flows.md']?.length || 0
+          });
+
           // Combine all artifacts
           generatedArtifacts = {
             ...prdArtifacts,
-            ...architectArtifacts
+            ...architectArtifacts,
+            ...designArtifacts
           };
           break;
 

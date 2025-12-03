@@ -40,13 +40,30 @@ The platform guides users through 6 sequential phases:
 ```
 User Input (project idea)
   ↓ [ANALYSIS] - Analyst generates constitution, brief, personas
-  ↓ [STACK_SELECTION] - User approves technology stack (GATE)
-  ↓ [SPEC] - PM generates PRD, data model, API spec
+  ↓ [STACK_SELECTION] - Architect proposes stack, user approves/customizes (GATE)
+  ↓ [SPEC] - PM generates PRD, data model, API spec + design system artifacts
   ↓ [DEPENDENCIES] - DevOps proposes packages (GATE)
   ↓ [SOLUTIONING] - Architect & Scrum Master create design, epics, tasks
   ↓ [DONE] - Auto-generate HANDOFF.md & ZIP for user download
   ↓ User uploads to IDE, pastes HANDOFF.md as LLM prompt for code generation
 ```
+
+### Hybrid Stack Selection
+
+The platform supports **12+ predefined stack templates** or fully **custom stack definitions**:
+
+| Template | Use Case |
+|----------|----------|
+| `nextjs_fullstack_expo` | Full-stack web + mobile with shared code |
+| `nextjs_web_only` | Web-only SaaS applications |
+| `vue_nuxt` | Vue ecosystem with Nuxt 3 |
+| `svelte_kit` | Lightweight, performant web apps |
+| `django_htmx` | Python backend with HTMX interactivity |
+| `go_react` | High-performance Go API + React frontend |
+| `flutter_firebase` | Cross-platform mobile with Firebase |
+| ...and more | See `orchestrator_spec.yml` for full list |
+
+**Custom Mode:** Define your own stack with frontend, backend, database, and deployment layers.
 
 ## 🏗️ Architecture
 
@@ -58,6 +75,7 @@ User Input (project idea)
 - TypeScript
 - Tailwind CSS
 - shadcn/ui components
+- Framer Motion (animations)
 
 **Backend:**
 - Node.js + TypeScript
@@ -214,14 +232,17 @@ Every project generated includes:
 
 Comprehensive documentation is available in the `docs/` folder:
 
-- **[CLAUDE.md](docs/CLAUDE.md)** - Claude Code guidance and quick reference
+- **[INDEX.md](docs/INDEX.md)** - Documentation index and navigation
 - **[ORCHESTRATOR_DESIGN.md](docs/ORCHESTRATOR_DESIGN.md)** - Complete workflow design (2200+ lines)
+- **[USAGE_GUIDE.md](docs/USAGE_GUIDE.md)** - Platform usage and stack selection guide
 - **[AUTHENTICATION.md](docs/AUTHENTICATION.md)** - Auth system details
 - **[DATABASE_SETUP.md](docs/DATABASE_SETUP.md)** - Database configuration guide
 - **[ERROR_HANDLING.md](docs/ERROR_HANDLING.md)** - Error codes and handling
 - **[SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md)** - Security analysis and recommendations
 - **[TESTING.md](docs/TESTING.md)** - Testing guide with examples
-- **[IMPLEMENTATION_PROGRESS.md](docs/IMPLEMENTATION_PROGRESS.md)** - Feature completion status
+
+**Design Reference:**
+- **[fire-your-design-team.md](fire-your-design-team.md)** - Design system principles, Framer Motion patterns, anti-patterns to avoid
 
 ## 🗂️ Configuration Files
 
@@ -331,10 +352,10 @@ Five specialized agents work together:
 | Agent | Phase | Role | Output |
 |-------|-------|------|--------|
 | **Analyst** | ANALYSIS | Clarify requirements | Constitution, Brief, Personas |
-| **PM** | SPEC | Document product | PRD, Data Model, API Spec |
-| **Architect** | SOLUTIONING | Design system | Architecture, Tech choices |
-| **Scrum Master** | SOLUTIONING | Break down work | Epics, Tasks (with DAG dependencies) |
+| **Architect** | STACK_SELECTION | Propose technology stack | stack-decision.md, stack-rationale.md |
+| **PM** | SPEC | Document product | PRD, Data Model, API Spec, Design System |
 | **DevOps** | DEPENDENCIES | Specify dependencies | Dependency list, security baseline |
+| **Scrum Master** | SOLUTIONING | Break down work | Epics, Tasks (with DAG dependencies) |
 
 ### Approval Gates
 
@@ -342,6 +363,18 @@ Two gates ensure user intentionality:
 
 1. **STACK_SELECTION Gate** - Requires explicit stack approval before proceeding to SPEC phase
 2. **DEPENDENCIES Gate** - Requires security review before proceeding to SOLUTIONING phase
+
+### Design System Integration
+
+The SPEC phase generates design system artifacts following the **[fire-your-design-team.md](fire-your-design-team.md)** principles:
+
+| Artifact | Purpose |
+|----------|---------|
+| `design-system.md` | Colors, typography (4 sizes max), spacing (8pt grid), motion tokens |
+| `component-inventory.md` | UI components with shadcn/ui mappings |
+| `user-flows.md` | Key user journey wireframes and interactions |
+
+**Anti-pattern prevention:** The system avoids "AI slop" aesthetics (purple gradients, Inter font defaults, gradient blobs) by enforcing design constraints.
 
 ### Artifact Versioning
 
@@ -354,11 +387,15 @@ All project artifacts are stored as human-readable files:
 │   ├── project-brief.md
 │   └── personas.md
 ├── STACK_SELECTION/v1/
-│   └── README.md
+│   ├── stack-decision.md
+│   └── stack-rationale.md
 ├── SPEC/v1/
 │   ├── PRD.md
 │   ├── data-model.md
-│   └── api-spec.json
+│   ├── api-spec.json
+│   ├── design-system.md
+│   ├── component-inventory.md
+│   └── user-flows.md
 └── ...
 ```
 
@@ -445,6 +482,6 @@ For questions or issues:
 
 ---
 
-**Last Updated:** November 15, 2025
+**Last Updated:** December 2, 2025
 
-**Version:** 0.1.0
+**Version:** 0.2.0

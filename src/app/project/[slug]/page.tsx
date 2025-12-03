@@ -213,12 +213,24 @@ export default function ProjectPage() {
     }
   };
 
-  const handleStackApprove = async (stackChoice: string, reasoning?: string, platform?: string) => {
+  const handleStackApprove = async (
+    stackChoice: string,
+    reasoning?: string,
+    technicalPreferences?: Record<string, string>
+  ) => {
     try {
+      // Determine mode based on stack choice
+      const mode = stackChoice === 'custom' ? 'custom' : 'template';
+      
       const response = await fetch(`/api/projects/${slug}/approve-stack`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stack_choice: stackChoice, reasoning, platform }),
+        body: JSON.stringify({
+          mode,
+          stack_choice: stackChoice,
+          reasoning,
+          technical_preferences: technicalPreferences,
+        }),
         cache: 'no-store'
       });
 
@@ -933,8 +945,8 @@ function getPhaseDescription(phase: string): string {
 function getPhaseOutputs(phase: string): string[] {
   const outputs: Record<string, string[]> = {
     ANALYSIS: ['constitution.md', 'project-brief.md', 'personas.md'],
-    STACK_SELECTION: ['stack-decision.md'],
-    SPEC: ['PRD.md', 'data-model.md', 'api-spec.json'],
+    STACK_SELECTION: ['stack-decision.md', 'stack-rationale.md'],
+    SPEC: ['PRD.md', 'data-model.md', 'api-spec.json', 'design-system.md', 'component-inventory.md', 'user-flows.md'],
     DEPENDENCIES: ['DEPENDENCIES.md', 'dependency-proposal.md', 'approval.md'],
     SOLUTIONING: ['architecture.md', 'epics.md', 'tasks.md', 'plan.md'],
     DONE: ['README.md', 'HANDOFF.md']

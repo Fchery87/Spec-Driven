@@ -1247,8 +1247,8 @@ export class Validators {
   private getRequiredFilesForPhase(phase: string): string[] {
     const phaseFiles: Record<string, string[]> = {
       ANALYSIS: ['constitution.md', 'project-brief.md', 'personas.md'],
-      STACK_SELECTION: ['plan.md', 'README.md'],
-      SPEC: ['PRD.md', 'data-model.md', 'api-spec.json'],
+      STACK_SELECTION: ['stack-decision.md', 'stack-rationale.md'],
+      SPEC: ['PRD.md', 'data-model.md', 'api-spec.json', 'design-system.md', 'component-inventory.md', 'user-flows.md'],
       DEPENDENCIES: ['DEPENDENCIES.md', 'dependency-proposal.md'],
       SOLUTIONING: ['architecture.md', 'epics.md', 'tasks.md'],
       DONE: ['HANDOFF.md']

@@ -1,33 +1,46 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle2, AlertCircle, Globe, Shield, Smartphone, Layers, Sparkles } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { CheckCircle2, AlertCircle, Globe, Shield, Smartphone, Layers, Sparkles, Server, Loader2 } from "lucide-react"
 
-interface ArchitecturePattern {
+interface StackTemplate {
   id: string
   name: string
   description: string
-  pattern_type: string
-  stack_examples: string[]
-  characteristics: {
-    codebase: string
-    scaling: string
-    ops_complexity: string
-    team_size: string
+  composition: {
+    frontend?: string
+    mobile?: string
+    backend?: string
+    database?: string
+    deployment?: string
+    pattern?: string
+    examples?: string
   }
   best_for: string[]
   strengths: string[]
   tradeoffs: string[]
-  dau_range: string
+  scaling: string
+}
+
+interface TechnicalPreferences {
+  state_management?: string
+  data_fetching?: string
+  forms?: string
+  validation?: string
+  http_client?: string
+  testing?: string
+  e2e_testing?: string
+  animation?: string
 }
 
 interface StackSelectionProps {
   selectedStack?: string
-  onStackSelect: (stackId: string, reasoning?: string) => void
+  onStackSelect: (stackId: string, reasoning?: string, preferences?: TechnicalPreferences) => void
   isLoading?: boolean
 }
 
@@ -36,221 +49,216 @@ export function StackSelection({
   onStackSelect,
   isLoading = false
 }: StackSelectionProps) {
+  const [templates, setTemplates] = useState<StackTemplate[]>([])
+  const [preferenceOptions, setPreferenceOptions] = useState<Record<string, string[]>>({})
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [customStack, setCustomStack] = useState('')
   const [showCustom, setShowCustom] = useState(false)
   const [reasoning, setReasoning] = useState('')
+  const [preferences, setPreferences] = useState<TechnicalPreferences>({})
 
-  // Define architecture patterns - 3 options: Web App, Mobile App, API-First
-  const ARCHITECTURE_PATTERNS: ArchitecturePattern[] = [
-    {
-      id: 'web_application',
-      name: 'Web Application',
-      description: 'Single unified codebase with integrated API layer for browser-based apps',
-      pattern_type: 'Monolithic Full-Stack',
-      stack_examples: ['Next.js + Drizzle', 'Django', 'React', 'Python', 'Tanstack Start'],
-      characteristics: {
-        codebase: 'Single unified repository',
-        scaling: 'Vertical scaling, managed services',
-        ops_complexity: 'Low - single deployment target',
-        team_size: 'Small to medium (1-5 engineers)'
-      },
-      best_for: ['SaaS dashboards', 'admin panels', 'internal tools', 'content platforms', 'MVPs'],
-      strengths: ['Single language ecosystem', 'unified codebase', 'fast iteration', 'integrated API layer', 'low operational overhead', 'easy debugging'],
-      tradeoffs: ['Less suitable for heavy background compute', 'tightly coupled frontend/backend', 'harder to scale independent components'],
-      dau_range: '<10k DAU'
-    },
-    {
-      id: 'mobile_application',
-      name: 'Mobile Application',
-      description: 'Cross-platform native apps with dedicated API backend',
-      pattern_type: 'Mobile-First',
-      stack_examples: ['React Native + Expo', 'Flutter + Firebase', 'Swift/Kotlin native', 'Supabase backend'],
-      characteristics: {
-        codebase: 'Mobile app + API backend',
-        scaling: 'App store deployment, cloud API',
-        ops_complexity: 'Medium - app store releases + API',
-        team_size: 'Medium (2-6 engineers)'
-      },
-      best_for: ['Consumer apps', 'offline-first', 'push notifications', 'device features', 'location-based services'],
-      strengths: ['Native device access (camera, GPS, sensors)', 'offline support & local storage', 'push notification infrastructure', 'app store distribution', 'better UX for mobile users'],
-      tradeoffs: ['App store review process', 'separate iOS/Android considerations', 'more complex deployment pipeline', 'device fragmentation'],
-      dau_range: '100k+ users'
-    },
-    {
-      id: 'api_first_platform',
-      name: 'API-First Platform',
-      description: 'Headless architecture serving multiple clients and integrations',
-      pattern_type: 'Headless/Multi-Client',
-      stack_examples: ['Node.js/Go/Rust API', 'GraphQL federation', 'Serverless (Lambda, Workers)', 'separate web/mobile clients'],
-      characteristics: {
-        codebase: 'Separate API + multiple client repos',
-        scaling: 'Horizontal scaling, independent services',
-        ops_complexity: 'High - multiple deployment targets',
-        team_size: 'Medium to large (3-10+ engineers)'
-      },
-      best_for: ['Multi-platform products', 'developer APIs', 'B2B integrations', 'marketplaces', 'SDK/CLI tooling'],
-      strengths: ['Single API serving web, mobile, third-party', 'SDK/CLI tooling potential', 'webhook-driven integrations', 'multi-tenant ready', 'technology flexibility'],
-      tradeoffs: ['Increased operational complexity', 'API contract management', 'separate deployments required', 'higher initial setup cost'],
-      dau_range: '100k+ DAU, B2B'
+  // Fetch stack templates from API
+  useEffect(() => {
+    async function fetchTemplates() {
+      try {
+        const response = await fetch('/api/stacks')
+        const data = await response.json()
+        if (data.success) {
+          setTemplates(data.data.templates)
+          setPreferenceOptions(data.data.technical_preferences || {})
+        } else {
+          setError('Failed to load stack templates')
+        }
+      } catch {
+        setError('Failed to fetch stack templates')
+      } finally {
+        setLoading(false)
+      }
     }
-  ]
-
-  const patterns = ARCHITECTURE_PATTERNS
+    fetchTemplates()
+  }, [])
 
   const handleStackSelect = (stackId: string) => {
-    onStackSelect(stackId, reasoning)
+    onStackSelect(stackId, reasoning, preferences)
   }
 
   const handleCustomStack = () => {
     if (customStack.trim()) {
-      onStackSelect('custom', reasoning)
+      onStackSelect('custom', reasoning, preferences)
     }
   }
 
-  const getPatternIcon = (patternId: string) => {
-    switch (patternId) {
-      case 'web_application':
-        return <Globe className="h-6 w-6 text-primary" />
-      case 'mobile_application':
-        return <Smartphone className="h-6 w-6 text-violet-500" />
-      case 'api_first_platform':
-        return <Layers className="h-6 w-6 text-cyan-500" />
-      default:
-        return <Shield className="h-6 w-6 text-muted-foreground" />
+  const getStackIcon = (stackId: string) => {
+    if (stackId.includes('mobile') || stackId.includes('expo') || stackId.includes('flutter') || stackId.includes('native')) {
+      return <Smartphone className="h-6 w-6 text-violet-500" />
     }
+    if (stackId.includes('api') || stackId.includes('serverless') || stackId.includes('edge')) {
+      return <Layers className="h-6 w-6 text-cyan-500" />
+    }
+    if (stackId.includes('go') || stackId.includes('django') || stackId.includes('fastapi')) {
+      return <Server className="h-6 w-6 text-orange-500" />
+    }
+    return <Globe className="h-6 w-6 text-primary" />
   }
 
-  const getPatternColor = (patternId: string) => {
-    switch (patternId) {
-      case 'web_application':
-        return 'border-primary/40 bg-primary/10'
-      case 'mobile_application':
-        return 'border-violet-500/40 bg-violet-500/10'
-      case 'api_first_platform':
-        return 'border-cyan-500/40 bg-cyan-500/10'
-      default:
-        return 'border-border bg-muted'
+  const getStackColor = (stackId: string) => {
+    if (stackId.includes('mobile') || stackId.includes('expo') || stackId.includes('flutter') || stackId.includes('native')) {
+      return 'border-violet-500/40 bg-violet-500/10'
     }
+    if (stackId.includes('api') || stackId.includes('serverless') || stackId.includes('edge')) {
+      return 'border-cyan-500/40 bg-cyan-500/10'
+    }
+    if (stackId.includes('go') || stackId.includes('django') || stackId.includes('fastapi')) {
+      return 'border-orange-500/40 bg-orange-500/10'
+    }
+    return 'border-primary/40 bg-primary/10'
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading stack templates...</span>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card className="border-destructive">
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-2 text-destructive">
+            <AlertCircle className="h-5 w-5" />
+            <span>{error}</span>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">
-      {/* Architecture Pattern Selector */}
+      {/* Header */}
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold mb-4 flex items-center justify-center gap-2">
           <Sparkles className="h-6 w-6 text-[hsl(var(--chart-2))]" />
-          Choose Your Architecture Pattern
+          Choose Your Technology Stack
         </h2>
-        <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
-          Select the architectural approach that best matches your project scale, team size, and technical requirements. Specific technology choices will be made in the next phase.
+        <p className="text-muted-foreground max-w-2xl mx-auto mb-4">
+          Select from {templates.length} predefined stack templates or define a fully custom stack.
+          Each template is optimized for specific use cases.
         </p>
+        <Badge variant="outline" className="text-sm">
+          Hybrid Mode: Architect proposes, you approve or customize
+        </Badge>
       </div>
 
-      {/* Architecture Pattern Options */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {patterns.map((pattern) => (
+      {/* Stack Template Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {templates.map((template) => (
           <Card
-            key={pattern.id}
+            key={template.id}
             className={`
               cursor-pointer transition-all hover:shadow-lg
-              ${selectedStack === pattern.id ? 'ring-2 ring-primary ' + getPatternColor(pattern.id) : 'hover:scale-[1.02]'}
+              ${selectedStack === template.id ? 'ring-2 ring-primary ' + getStackColor(template.id) : 'hover:scale-[1.02]'}
             `}
-            onClick={() => handleStackSelect(pattern.id)}
+            onClick={() => handleStackSelect(template.id)}
           >
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  {getPatternIcon(pattern.id)}
-                  <CardTitle className="text-lg">{pattern.name}</CardTitle>
+                  {getStackIcon(template.id)}
+                  <CardTitle className="text-base">{template.name}</CardTitle>
                 </div>
-                {selectedStack === pattern.id && (
+                {selectedStack === template.id && (
                   <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                 )}
               </div>
-              <CardDescription className="text-sm">
-                {pattern.description}
+              <CardDescription className="text-sm line-clamp-2">
+                {template.description}
               </CardDescription>
-              <Badge variant="outline" className="w-fit text-xs mt-2">
-                {pattern.pattern_type}
-              </Badge>
             </CardHeader>
 
-            <CardContent className="space-y-4">
-              {/* Stack Examples */}
-              <div>
-                <h4 className="font-semibold text-sm mb-2">Stack Examples:</h4>
-                <div className="flex flex-wrap gap-1">
-                  {pattern.stack_examples.map((example) => (
-                    <Badge key={example} className="text-xs bg-muted text-muted-foreground hover:bg-muted">
-                      {example}
-                    </Badge>
-                  ))}
+            <CardContent className="space-y-3">
+              {/* Composition */}
+              {template.composition && (
+                <div>
+                  <h4 className="font-semibold text-xs mb-1.5 text-muted-foreground uppercase">Stack</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {template.composition.frontend && (
+                      <Badge variant="secondary" className="text-xs">{template.composition.frontend}</Badge>
+                    )}
+                    {template.composition.backend && (
+                      <Badge variant="secondary" className="text-xs">{template.composition.backend}</Badge>
+                    )}
+                    {template.composition.database && (
+                      <Badge variant="secondary" className="text-xs">{template.composition.database}</Badge>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Best For */}
               <div>
-                <h4 className="font-semibold text-sm mb-2">Best For:</h4>
+                <h4 className="font-semibold text-xs mb-1.5 text-muted-foreground uppercase">Best For</h4>
                 <div className="flex flex-wrap gap-1">
-                  {pattern.best_for.map((item) => (
-                    <Badge key={item} variant="secondary" className="text-xs">
+                  {template.best_for.slice(0, 3).map((item) => (
+                    <Badge key={item} className="text-xs bg-muted text-muted-foreground hover:bg-muted">
                       {item}
                     </Badge>
                   ))}
                 </div>
               </div>
 
-              {/* Characteristics */}
-              <div>
-                <h4 className="font-semibold text-sm mb-2">Characteristics:</h4>
-                <div className="grid grid-cols-1 gap-1.5 text-xs">
-                  <div><span className="font-medium">Codebase:</span> {pattern.characteristics.codebase}</div>
-                  <div><span className="font-medium">Scaling:</span> {pattern.characteristics.scaling}</div>
-                  <div><span className="font-medium">Ops:</span> {pattern.characteristics.ops_complexity}</div>
-                  <div><span className="font-medium">Team:</span> {pattern.characteristics.team_size}</div>
-                  <div><span className="font-medium">Scale:</span> {pattern.dau_range}</div>
-                </div>
-              </div>
-
               {/* Strengths */}
               <div>
-                <h4 className="font-semibold text-sm mb-2">Strengths:</h4>
-                <ul className="text-xs space-y-1">
-                  {pattern.strengths.slice(0, 4).map((strength, index) => (
-                    <li key={index} className="flex items-start gap-2">
+                <h4 className="font-semibold text-xs mb-1.5 text-muted-foreground uppercase">Strengths</h4>
+                <ul className="text-xs space-y-0.5">
+                  {template.strengths.slice(0, 3).map((strength, index) => (
+                    <li key={index} className="flex items-start gap-1.5">
                       <CheckCircle2 className="h-3 w-3 text-emerald-500 mt-0.5 flex-shrink-0" />
-                      {strength}
+                      <span className="line-clamp-1">{strength}</span>
                     </li>
                   ))}
                 </ul>
               </div>
 
               {/* Tradeoffs */}
-              <div>
-                <h4 className="font-semibold text-sm mb-2">Trade-offs:</h4>
-                <ul className="text-xs space-y-1">
-                  {pattern.tradeoffs.slice(0, 3).map((tradeoff, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <AlertCircle className="h-3 w-3 text-amber-500 mt-0.5 flex-shrink-0" />
-                      {tradeoff}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              {template.tradeoffs.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-xs mb-1.5 text-muted-foreground uppercase">Trade-offs</h4>
+                  <ul className="text-xs space-y-0.5">
+                    {template.tradeoffs.slice(0, 2).map((tradeoff, index) => (
+                      <li key={index} className="flex items-start gap-1.5">
+                        <AlertCircle className="h-3 w-3 text-amber-500 mt-0.5 flex-shrink-0" />
+                        <span className="line-clamp-1">{tradeoff}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Scaling */}
+              {template.scaling && (
+                <div className="pt-2 border-t">
+                  <span className="text-xs text-muted-foreground">{template.scaling}</span>
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Custom Pattern Option */}
+      {/* Custom Stack Option */}
       <Card className="border-dashed border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-6 w-6 text-muted-foreground" />
-            Custom Architecture
+            Custom Stack
           </CardTitle>
           <CardDescription>
-            Define your own architecture pattern if the predefined options don&apos;t match your needs.
+            Define your own technology stack if the predefined templates don&apos;t match your needs.
           </CardDescription>
         </CardHeader>
 
@@ -261,12 +269,12 @@ export function StackSelection({
               onClick={() => setShowCustom(true)}
               className="w-full"
             >
-              Define Custom Architecture
+              Define Custom Stack
             </Button>
           ) : (
             <div className="space-y-4">
               <Input
-                placeholder="Describe your custom architecture pattern (e.g., Custom monolithic with message queues, specialized microservices)"
+                placeholder="Describe your custom stack (e.g., SvelteKit + Go API + Turso SQLite + Fly.io)"
                 value={customStack}
                 onChange={(e) => setCustomStack(e.target.value)}
                 className="w-full"
@@ -277,7 +285,7 @@ export function StackSelection({
                   disabled={!customStack.trim() || isLoading}
                   className="flex-1"
                 >
-                  Use Custom Architecture
+                  Use Custom Stack
                 </Button>
                 <Button
                   variant="outline"
@@ -294,19 +302,57 @@ export function StackSelection({
         </CardContent>
       </Card>
 
+      {/* Technical Preferences */}
+      {(selectedStack || showCustom) && Object.keys(preferenceOptions).length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Technical Preferences (Optional)</CardTitle>
+            <CardDescription>
+              Customize library choices for your project. Leave blank to use defaults.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {Object.entries(preferenceOptions).map(([key, options]) => (
+                <div key={key} className="space-y-2">
+                  <label className="text-sm font-medium capitalize">
+                    {key.replace(/_/g, ' ')}
+                  </label>
+                  <Select
+                    value={preferences[key as keyof TechnicalPreferences] || ''}
+                    onValueChange={(value) => setPreferences(prev => ({ ...prev, [key]: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Default" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {options.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Reasoning Input */}
       {(selectedStack || showCustom) && (
         <Card>
           <CardHeader>
-            <CardTitle>Why did you choose this architecture?</CardTitle>
+            <CardTitle>Why did you choose this stack?</CardTitle>
             <CardDescription>
-              Help us understand your reasoning so we can recommend the best specific technologies for your needs.
+              Help us understand your reasoning so we can optimize the generated specifications.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <textarea
               className="w-full p-3 border rounded-md resize-none h-24"
-              placeholder="e.g., We chose monolithic because our team is small and we want fast iteration. We can scale later when needed..."
+              placeholder="e.g., We need fast iteration for our MVP. The unified TypeScript codebase helps our small team move quickly..."
               value={reasoning}
               onChange={(e) => setReasoning(e.target.value)}
             />
@@ -323,13 +369,14 @@ export function StackSelection({
                 disabled={isLoading}
                 className="flex-1"
               >
-                {isLoading ? 'Confirming...' : 'Confirm Architecture Choice'}
+                {isLoading ? 'Confirming...' : 'Confirm Stack Choice'}
               </Button>
               <Button
                 variant="outline"
                 onClick={() => {
                   onStackSelect('')
                   setReasoning('')
+                  setPreferences({})
                   setShowCustom(false)
                   setCustomStack('')
                 }}
@@ -348,7 +395,7 @@ export function StackSelection({
             <div className="flex items-center gap-2 text-[hsl(var(--chart-4))]">
               <CheckCircle2 className="h-5 w-5 text-[hsl(var(--chart-4))]" />
               <span className="font-semibold">
-                Selected: {patterns.find(p => p.id === selectedStack)?.name} architecture
+                Selected: {templates.find(t => t.id === selectedStack)?.name || selectedStack}
               </span>
             </div>
           </CardContent>

@@ -1,6 +1,92 @@
-# Production Utilities Usage Guide
+# Platform Usage Guide
 
-Quick reference for using the new production-hardening utilities.
+Quick reference for using the Spec-Driven platform features.
+
+---
+
+## Stack Selection
+
+The platform supports **hybrid stack selection** with 12+ predefined templates or fully custom stacks.
+
+### Template Mode
+
+Select from predefined templates:
+
+| Template | Best For |
+|----------|----------|
+| `nextjs_fullstack_expo` | Full-stack web + mobile (shared TypeScript) |
+| `nextjs_web_only` | Web-only SaaS, dashboards |
+| `vue_nuxt` | Vue ecosystem with Nuxt 3 |
+| `svelte_kit` | Lightweight, performant apps |
+| `django_htmx` | Python backend with HTMX |
+| `go_react` | High-performance Go API |
+| `flutter_firebase` | Cross-platform mobile |
+
+### Custom Mode
+
+Define your own stack composition:
+
+```typescript
+{
+  mode: 'custom',
+  stack_choice: 'custom_stack',
+  custom_composition: {
+    frontend: {
+      framework: 'React',
+      meta_framework: 'Next.js',
+      styling: 'Tailwind CSS',
+      ui_library: 'shadcn/ui'
+    },
+    mobile: { platform: 'expo' },
+    backend: { language: 'TypeScript', framework: 'Express' },
+    database: { type: 'sql', provider: 'Neon', orm: 'Drizzle' },
+    deployment: { platform: 'Vercel', architecture: 'monolith' }
+  },
+  technical_preferences: {
+    state_management: 'zustand',
+    data_fetching: 'tanstack-query',
+    forms: 'react-hook-form',
+    validation: 'zod',
+    animation: 'framer-motion',
+    testing: 'vitest'
+  }
+}
+```
+
+### Generated Artifacts
+
+After stack approval:
+- `stack-decision.md` - Selected stack with composition table
+- `stack-rationale.md` - Decision reasoning and alternatives
+
+---
+
+## Design System
+
+The SPEC phase generates design system artifacts following [fire-your-design-team.md](../fire-your-design-team.md).
+
+### Artifacts Generated
+
+| Artifact | Content |
+|----------|---------|
+| `design-system.md` | Colors, typography (4 sizes max), spacing (8pt grid), motion tokens |
+| `component-inventory.md` | UI components mapped to shadcn/ui |
+| `user-flows.md` | Key user journeys with wireframes |
+
+### Anti-Patterns Avoided
+
+The system enforces design constraints to prevent "AI slop":
+- No purple gradients as default primary color
+- No Inter font as default (choose project-specific)
+- No gradient blob backgrounds
+- Max 12px border radius
+- Consistent motion with Framer Motion duration scale
+
+---
+
+## Production Utilities
+
+Quick reference for using the production-hardening utilities.
 
 ## 1. Rate Limiting
 
@@ -506,4 +592,4 @@ As you integrate these utilities into more routes:
 
 ---
 
-**Last Updated:** November 16, 2025
+**Last Updated:** December 2, 2025

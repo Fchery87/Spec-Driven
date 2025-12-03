@@ -19,26 +19,33 @@ phases:
     
   STACK_SELECTION:
     name: "STACK_SELECTION"
-    description: "Select and approve architecture pattern"
+    description: "Architect proposes optimal stack based on requirements; user approves, modifies, or customizes"
     owner: "architect"
-    duration_minutes: 20
-    inputs: ["project-brief.md", "personas.md"]
-    outputs: ["stack-decision.md"]
+    duration_minutes: 25
+    inputs: ["project-brief.md", "personas.md", "constitution.md"]
+    outputs: ["stack-decision.md", "stack-rationale.md"]
     depends_on: ["ANALYSIS"]
     gates: ["stack_approved"]
     next_phase: "SPEC"
-    validators: ["presence", "stack_approved"]
+    validators: ["presence", "stack_approved", "stack_completeness"]
+    mode: "hybrid"
+    process:
+      - "1. Architect analyzes requirements from project-brief.md"
+      - "2. Architect considers scale, platforms, team expertise, integrations"
+      - "3. Architect proposes best-fit template OR custom stack"
+      - "4. User can: Accept proposal, Pick different template, Fully customize"
+      - "5. Approval gate confirms final choice"
     
   SPEC:
     name: "SPEC"
-    description: "Generate detailed specifications"
+    description: "Generate detailed specifications and design system"
     owner: ["pm", "architect"]
-    duration_minutes: 45
+    duration_minutes: 60
     inputs: ["project-brief.md", "personas.md", "approved_stack"]
-    outputs: ["PRD.md", "data-model.md", "api-spec.json"]
+    outputs: ["PRD.md", "data-model.md", "api-spec.json", "design-system.md", "component-inventory.md", "user-flows.md"]
     depends_on: ["ANALYSIS", "STACK_SELECTION"]
     next_phase: "DEPENDENCIES"
-    validators: ["markdown_frontmatter", "api_openapi", "presence", "content_coverage", "requirement_format"]
+    validators: ["markdown_frontmatter", "api_openapi", "presence", "content_coverage", "requirement_format", "design_system_compliance"]
     allow_regeneration: true
     max_regeneration_attempts: 3
     
@@ -77,10 +84,18 @@ phases:
     depends_on: ["SOLUTIONING"]
     validators: ["handoff_complete", "zip_created", "cross_artifact_consistency"]
 
-# Technology stack options
-stacks:
-  nextjs_only_expo:
-    name: "Next.js-Only + Expo"
+# Technology Stack Configuration
+# Mode: hybrid - Architect proposes based on requirements, user can accept, modify, or go custom
+stack_selection_mode: "hybrid"
+
+# Stack Templates (Quick-start options)
+# These are SUGGESTIONS, not requirements. The Architect agent will propose the best fit
+# based on project requirements, or the user can fully customize.
+stack_templates:
+
+  # === FULL-STACK WEB + MOBILE ===
+  nextjs_fullstack_expo:
+    name: "Next.js Full-Stack + Expo Mobile"
     description: "Unified TypeScript codebase with Next.js App Router and Expo mobile"
     composition:
       frontend: "Next.js 14 (App Router)"
@@ -91,21 +106,269 @@ stacks:
     best_for: ["MVPs", "dashboards", "CRUD SaaS", "low ops footprint"]
     strengths: ["Single language", "unified codebase", "fast iteration", "integrated API"]
     tradeoffs: ["Less suitable for heavy backend compute", "long-running jobs"]
-    scaling: "Good for <10k DAU, existing managed infra"
+    scaling: "Good for <10k DAU, managed infrastructure"
     
-  hybrid_nextjs_fastapi_expo:
-    name: "Hybrid Next.js + FastAPI + Expo"
+  hybrid_nextjs_fastapi:
+    name: "Next.js + FastAPI + Expo"
     description: "Decoupled services with Python backend for heavy compute"
     composition:
       frontend: "Next.js 14"
       mobile: "Expo with React Native"
       backend: "FastAPI (Python)"
       database: "PostgreSQL with SQLAlchemy"
-      deployment: "Separate infra"
-    best_for: ["AI/ETL/OCR", "long-running jobs", "heavier backend compute"]
-    strengths: ["Decoupled services", "Python for data science/ML", "flexibility", "async workers"]
+      deployment: "Separate infra (Vercel + Railway/Render)"
+    best_for: ["AI/ML applications", "ETL/data pipelines", "long-running jobs"]
+    strengths: ["Python ecosystem", "decoupled services", "async workers"]
     tradeoffs: ["More operational complexity", "separate deployments"]
     scaling: "Good for 10k-100k DAU, complex backend logic"
+
+  # === WEB-ONLY (NO MOBILE) ===
+  nextjs_web_only:
+    name: "Next.js Web Only"
+    description: "Full-stack Next.js without mobile - responsive web"
+    composition:
+      frontend: "Next.js 14 (App Router)"
+      mobile: "None (responsive web design)"
+      backend: "Next.js API routes / Server Actions"
+      database: "PostgreSQL with Prisma"
+      deployment: "Vercel"
+    best_for: ["Web apps", "admin dashboards", "internal tools", "B2B SaaS"]
+    strengths: ["Simplest setup", "server components", "no mobile complexity"]
+    tradeoffs: ["No native mobile experience"]
+    scaling: "Good for any scale with proper caching"
+
+  react_express:
+    name: "React SPA + Express API"
+    description: "Traditional SPA with separate Node.js backend"
+    composition:
+      frontend: "React 18 + Vite"
+      mobile: "None (or add React Native later)"
+      backend: "Express.js or Fastify"
+      database: "PostgreSQL or MongoDB"
+      deployment: "Any (Vercel, AWS, Railway, etc.)"
+    best_for: ["Traditional SPAs", "custom server needs", "WebSocket apps"]
+    strengths: ["Full control", "flexible architecture", "mature ecosystem"]
+    tradeoffs: ["More setup required", "manual optimizations"]
+    scaling: "Highly flexible based on backend design"
+
+  vue_nuxt:
+    name: "Vue + Nuxt Full-Stack"
+    description: "Vue.js ecosystem with Nuxt for SSR/SSG"
+    composition:
+      frontend: "Nuxt 3 (Vue 3)"
+      mobile: "None (or Capacitor/Ionic)"
+      backend: "Nuxt server routes / Nitro"
+      database: "PostgreSQL with Prisma"
+      deployment: "Vercel, Netlify, or Cloudflare"
+    best_for: ["Vue teams", "content-heavy sites", "progressive enhancement"]
+    strengths: ["Excellent DX", "auto-imports", "hybrid rendering"]
+    tradeoffs: ["Smaller ecosystem than React"]
+    scaling: "Good for most use cases"
+
+  svelte_kit:
+    name: "SvelteKit Full-Stack"
+    description: "Svelte with SvelteKit for full-stack apps"
+    composition:
+      frontend: "SvelteKit (Svelte 5)"
+      mobile: "None (or Capacitor)"
+      backend: "SvelteKit endpoints"
+      database: "PostgreSQL with Drizzle"
+      deployment: "Vercel, Cloudflare, or Netlify"
+    best_for: ["Performance-critical apps", "smaller bundle size", "simpler mental model"]
+    strengths: ["Smallest bundle", "no virtual DOM", "excellent performance"]
+    tradeoffs: ["Smaller ecosystem", "fewer libraries"]
+    scaling: "Excellent performance at any scale"
+
+  # === STATIC / JAMstack ===
+  astro_static:
+    name: "Astro Static Site"
+    description: "Content-focused static site with optional islands"
+    composition:
+      frontend: "Astro with React/Vue/Svelte islands"
+      mobile: "None (responsive web)"
+      backend: "Serverless functions (optional)"
+      database: "Headless CMS (Sanity, Contentful, Strapi) or none"
+      deployment: "Vercel, Netlify, or Cloudflare Pages"
+    best_for: ["Marketing sites", "blogs", "documentation", "low interactivity"]
+    strengths: ["Zero JS by default", "fastest load times", "SEO-optimized"]
+    tradeoffs: ["Limited interactivity", "rebuild for content updates"]
+    scaling: "CDN-based, infinitely scalable"
+
+  # === SERVERLESS / EDGE ===
+  serverless_edge:
+    name: "Serverless Edge Stack"
+    description: "Edge-first architecture for global low-latency"
+    composition:
+      frontend: "Next.js or Remix"
+      mobile: "None or React Native"
+      backend: "Cloudflare Workers / Vercel Edge Functions"
+      database: "Turso, PlanetScale, or Supabase"
+      deployment: "Cloudflare or Vercel"
+    best_for: ["Global apps", "low latency requirements", "cost optimization"]
+    strengths: ["Sub-50ms latency globally", "auto-scaling", "pay-per-use"]
+    tradeoffs: ["Edge runtime limitations", "cold starts"]
+    scaling: "Global edge, virtually unlimited"
+
+  # === BACKEND-HEAVY ===
+  django_htmx:
+    name: "Django + HTMX"
+    description: "Python-first with hypermedia approach"
+    composition:
+      frontend: "Django templates + HTMX + Alpine.js"
+      mobile: "None (or Django REST + mobile app)"
+      backend: "Django"
+      database: "PostgreSQL"
+      deployment: "Railway, Render, or AWS"
+    best_for: ["Python teams", "rapid prototyping", "admin-heavy apps"]
+    strengths: ["Batteries included", "excellent admin", "mature ecosystem"]
+    tradeoffs: ["Less interactive UIs", "monolithic by default"]
+    scaling: "Good with proper caching and async views"
+
+  go_react:
+    name: "Go Backend + React Frontend"
+    description: "High-performance Go backend with React SPA"
+    composition:
+      frontend: "React 18 + Vite"
+      mobile: "None or React Native"
+      backend: "Go (Gin, Echo, or Chi)"
+      database: "PostgreSQL"
+      deployment: "Docker on any cloud"
+    best_for: ["High-throughput APIs", "microservices", "performance-critical"]
+    strengths: ["Fastest backend", "low memory", "great concurrency"]
+    tradeoffs: ["Two languages", "more verbose backend"]
+    scaling: "Excellent for high-traffic systems"
+
+  # === MOBILE-FIRST ===
+  flutter_firebase:
+    name: "Flutter + Firebase"
+    description: "Cross-platform mobile with Firebase backend"
+    composition:
+      frontend: "Flutter Web (optional)"
+      mobile: "Flutter (iOS + Android)"
+      backend: "Firebase (Firestore, Auth, Functions)"
+      database: "Firestore (NoSQL)"
+      deployment: "Firebase Hosting + App Stores"
+    best_for: ["Mobile-first apps", "real-time features", "rapid prototyping"]
+    strengths: ["Single codebase for iOS/Android", "real-time sync", "offline-first"]
+    tradeoffs: ["Dart language", "Firebase vendor lock-in", "Firestore limitations"]
+    scaling: "Good for most mobile apps, watch Firestore costs"
+
+  react_native_supabase:
+    name: "React Native + Supabase"
+    description: "React Native mobile with Supabase backend"
+    composition:
+      frontend: "React (web, optional)"
+      mobile: "React Native (bare or Expo)"
+      backend: "Supabase (PostgreSQL + Auth + Storage)"
+      database: "PostgreSQL (via Supabase)"
+      deployment: "Supabase + App Stores"
+    best_for: ["Mobile apps needing SQL", "real-time features", "open-source preference"]
+    strengths: ["PostgreSQL power", "real-time subscriptions", "self-hostable"]
+    tradeoffs: ["Less mature than Firebase"]
+    scaling: "Good, scales with PostgreSQL"
+
+# Custom Stack Schema
+# When user selects "custom", they define each layer
+custom_stack_schema:
+  frontend:
+    framework:
+      type: "string"
+      options: ["React", "Vue", "Svelte", "Angular", "Solid", "Qwik", "Vanilla JS", "None"]
+      description: "Core UI framework"
+    meta_framework:
+      type: "string | null"
+      options: ["Next.js", "Nuxt", "SvelteKit", "Remix", "Astro", "Vite SPA", "None"]
+      description: "Full-stack framework (optional)"
+    styling:
+      type: "string"
+      options: ["Tailwind CSS", "CSS Modules", "styled-components", "Emotion", "Vanilla CSS", "Sass"]
+      default: "Tailwind CSS"
+    ui_library:
+      type: "string"
+      options: ["shadcn/ui", "Radix UI", "Headless UI", "Material UI", "Chakra UI", "Ant Design", "Custom", "None"]
+      default: "shadcn/ui"
+      
+  mobile:
+    platform:
+      type: "string"
+      options: ["none", "expo", "react-native-bare", "flutter", "native-ios", "native-android", "capacitor", "ionic"]
+      default: "none"
+      description: "Mobile platform choice"
+      
+  backend:
+    language:
+      type: "string"
+      options: ["TypeScript", "Python", "Go", "Rust", "Ruby", "Java", "PHP", "C#", "Serverless-only"]
+      description: "Primary backend language"
+    framework:
+      type: "string"
+      options_by_language:
+        TypeScript: ["Express", "Fastify", "Hono", "tRPC", "Next.js API", "NestJS", "Elysia"]
+        Python: ["FastAPI", "Django", "Flask", "Litestar"]
+        Go: ["Gin", "Echo", "Chi", "Fiber"]
+        Rust: ["Axum", "Actix", "Rocket"]
+        Ruby: ["Rails", "Sinatra", "Hanami"]
+        Java: ["Spring Boot", "Quarkus", "Micronaut"]
+        PHP: ["Laravel", "Symfony"]
+        "C#": [".NET Core", "ASP.NET"]
+      description: "Backend framework"
+      
+  database:
+    type:
+      type: "string"
+      options: ["sql", "nosql", "edge", "graph", "none"]
+      description: "Database paradigm"
+    provider:
+      type: "string"
+      options_by_type:
+        sql: ["PostgreSQL", "MySQL", "SQLite", "SQL Server", "CockroachDB"]
+        nosql: ["MongoDB", "DynamoDB", "Firestore", "CouchDB"]
+        edge: ["Turso", "PlanetScale", "Neon", "Supabase", "D1"]
+        graph: ["Neo4j", "DGraph", "ArangoDB"]
+      description: "Database provider"
+    orm:
+      type: "string"
+      options: ["Prisma", "Drizzle", "TypeORM", "Sequelize", "SQLAlchemy", "Django ORM", "GORM", "Raw SQL"]
+      description: "ORM/query builder"
+      
+  deployment:
+    platform:
+      type: "string"
+      options: ["Vercel", "Netlify", "Cloudflare", "AWS", "GCP", "Azure", "Railway", "Render", "Fly.io", "DigitalOcean", "Self-hosted"]
+      description: "Deployment platform"
+    architecture:
+      type: "string"
+      options: ["monolith", "modular-monolith", "microservices", "serverless", "edge"]
+      default: "monolith"
+      description: "Deployment architecture"
+
+# Technical Preferences (User can specify in project brief)
+# These override defaults when generating dependencies
+technical_preferences_schema:
+  state_management:
+    options: ["zustand", "redux", "jotai", "recoil", "mobx", "valtio", "none"]
+    default: "zustand"
+  data_fetching:
+    options: ["tanstack-query", "swr", "rtk-query", "apollo", "urql", "fetch"]
+    default: "tanstack-query"
+  forms:
+    options: ["react-hook-form", "formik", "react-final-form", "native"]
+    default: "react-hook-form"
+  validation:
+    options: ["zod", "yup", "joi", "valibot", "arktype"]
+    default: "zod"
+  http_client:
+    options: ["fetch", "axios", "ky", "got"]
+    default: "fetch"
+  testing:
+    options: ["vitest", "jest", "mocha"]
+    default: "vitest"
+  e2e_testing:
+    options: ["playwright", "cypress", "none"]
+    default: "playwright"
+  animation:
+    options: ["framer-motion", "react-spring", "gsap", "none"]
+    default: "framer-motion"
 
 # Agent definitions
 agents:
@@ -155,6 +418,15 @@ agents:
         - Specific, Measurable, Achievable, Relevant, Time-bound
         - Example: "Achieve 1,000 active users within 3 months of launch"
       - **Risks and Mitigations**: Top 3-5 project risks with mitigation strategies
+      - **Technical Preferences** (OPTIONAL but valuable for stack selection):
+        - Target platforms: Web only? Mobile? Desktop? All?
+        - Team expertise: What languages/frameworks does the team know?
+        - Infrastructure constraints: Existing cloud provider? Self-hosted requirements?
+        - Scale expectations: Expected users, traffic, data volume
+        - Integration requirements: Third-party APIs, existing systems
+        - Performance requirements: Real-time? Batch processing? Low latency?
+        - Specific library preferences: State management, ORM, testing framework
+        - Budget constraints: Hosting budget, paid services allowed?
 
       ## 3. personas.md - User Profiles (3-5 distinct personas)
       Each persona MUST include:
@@ -403,8 +675,151 @@ agents:
 
       ## PHASE-SPECIFIC INSTRUCTIONS
 
+      ### FOR PHASE: stack_selection
+      Analyze project requirements and propose the optimal technology stack.
+
+      **CRITICAL: DO NOT default to Next.js/Expo. Analyze requirements first.**
+
+      #### INPUT ANALYSIS
+      Review these documents for stack-relevant signals:
+      - **project-brief.md**: Scale expectations, MVP scope, success metrics
+      - **personas.md**: Technical proficiency of users, platforms they use
+      - **constitution.md**: Non-negotiable constraints, technical preferences
+
+      #### DECISION FACTORS (Weight each based on project needs)
+      1. **Target Platforms**: Web-only? Mobile required? Desktop?
+      2. **Scale Requirements**: <1k users, 1k-10k, 10k-100k, 100k+ DAU
+      3. **Team Expertise**: Languages/frameworks mentioned in preferences
+      4. **Backend Complexity**: CRUD-only, AI/ML, real-time, long-running jobs
+      5. **Mobile Requirements**: None, responsive web, PWA, native app
+      6. **Database Needs**: Relational, document, real-time sync, edge
+      7. **Deployment Constraints**: Managed platforms, self-hosted, edge
+      8. **Budget Constraints**: Free tier needed, enterprise budget available
+      9. **Integration Requirements**: Third-party APIs, existing systems
+      10. **Performance Needs**: Real-time, batch processing, global latency
+
+      #### AVAILABLE STACK TEMPLATES
+      Review stack_templates in orchestrator_spec.yml. Choose the best fit OR propose custom.
+
+      Templates available:
+      - nextjs_fullstack_expo: TypeScript fullstack + mobile
+      - hybrid_nextjs_fastapi: Next.js + Python backend
+      - nextjs_web_only: Web-only, no mobile
+      - react_express: Traditional SPA + Node backend
+      - vue_nuxt: Vue ecosystem
+      - svelte_kit: SvelteKit fullstack
+      - astro_static: Static/JAMstack sites
+      - serverless_edge: Edge-first architecture
+      - django_htmx: Python + hypermedia
+      - go_react: High-performance Go backend
+      - flutter_firebase: Mobile-first with Firebase
+      - react_native_supabase: React Native + Supabase
+      - CUSTOM: Define each layer manually
+
+      #### OUTPUT 1: stack-decision.md
+      ```
+      filename: stack-decision.md
+      ---
+      title: Technology Stack Decision
+      owner: architect
+      version: 1.0
+      date: {{currentDate}}
+      status: pending_approval
+      ---
+
+      # Technology Stack Decision
+
+      ## Recommended Stack
+      **Template**: [template_name OR "custom"]
+
+      ### Composition
+      | Layer | Technology | Version | Rationale |
+      |-------|------------|---------|-----------|
+      | Frontend | [framework] | [version] | [why this choice] |
+      | Mobile | [platform or "None"] | [version] | [why this choice] |
+      | Backend | [framework] | [version] | [why this choice] |
+      | Database | [provider] | [version] | [why this choice] |
+      | ORM | [choice] | [version] | [why this choice] |
+      | Deployment | [platform] | - | [why this choice] |
+
+      ### Technical Preferences Applied
+      | Preference | User Choice | Applied |
+      |------------|-------------|---------|
+      | State Management | [from brief or default] | [library] |
+      | Data Fetching | [from brief or default] | [library] |
+      | Forms | [from brief or default] | [library] |
+      | Validation | [from brief or default] | [library] |
+      | Testing | [from brief or default] | [library] |
+      | Animation | [from brief or default] | [library] |
+
+      ## Why This Stack?
+      [2-3 paragraphs explaining the choice based on project requirements]
+
+      ## Alternatives Considered
+      | Alternative | Why Not Chosen |
+      |-------------|----------------|
+      | [stack 1] | [reason] |
+      | [stack 2] | [reason] |
+
+      ## Trade-offs Accepted
+      - [trade-off 1 and mitigation]
+      - [trade-off 2 and mitigation]
+
+      ## Scaling Considerations
+      [How this stack scales as the project grows]
+      ```
+
+      #### OUTPUT 2: stack-rationale.md
+      ```
+      filename: stack-rationale.md
+      ---
+      title: Stack Selection Rationale
+      owner: architect
+      version: 1.0
+      date: {{currentDate}}
+      status: draft
+      ---
+
+      # Stack Selection Rationale
+
+      ## Requirements Analysis
+
+      ### From Project Brief
+      - Scale: [extracted from brief]
+      - MVP Scope: [extracted]
+      - Key Technical Challenges: [identified]
+
+      ### From Personas
+      - User Platforms: [web/mobile/desktop usage]
+      - Technical Proficiency: [novice/intermediate/advanced]
+
+      ### From Constitution
+      - Constraints: [non-negotiables]
+      - Technical Preferences: [if specified]
+
+      ## Decision Matrix
+      | Factor | Weight | Chosen Stack Score | Alternative Score |
+      |--------|--------|-------------------|-------------------|
+      | Platform fit | [1-5] | [score] | [score] |
+      | Scale support | [1-5] | [score] | [score] |
+      | Team expertise | [1-5] | [score] | [score] |
+      | Time to market | [1-5] | [score] | [score] |
+      | Maintenance | [1-5] | [score] | [score] |
+      | **Total** | - | **[total]** | **[total]** |
+
+      ## Risk Assessment
+      | Risk | Probability | Impact | Mitigation |
+      |------|-------------|--------|------------|
+      | [risk 1] | Low/Med/High | Low/Med/High | [how to handle] |
+
+      ## Future Considerations
+      - [What to do if scale increases]
+      - [What to do if mobile becomes priority]
+      - [Migration path if needed]
+      ```
+
       ### FOR PHASE: spec
-      Generate TWO files: data-model.md and api-spec.json
+      Generate FIVE files: data-model.md, api-spec.json, design-system.md, component-inventory.md, user-flows.md
 
       #### OUTPUT 1: data-model.md
       MUST include:
@@ -593,16 +1008,29 @@ agents:
       - Rollback strategy
 
       # UI/UX IMPLEMENTATION STANDARDS (Include in architecture.md)
+      # CRITICAL: Follow fire-your-design-team.md for all design decisions
       Default technology choices:
       - Component Library: shadcn/ui (install via `pnpm dlx shadcn@latest add`)
+      - Animation Library: framer-motion (REQUIRED)
       - Icons: lucide-react
-      - Styling: Tailwind CSS
-      - Color System: shadcn preset colors only
-      - Accessibility: WCAG AA minimum
+      - Styling: Tailwind CSS v4 with OKLCH colors
+      - Typography: 4 sizes max, 2 weights only (regular, semibold)
+      - Spacing: 8pt grid (all values divisible by 4 or 8)
+      - Colors: 60/30/10 rule (neutral/complementary/accent)
+      - Accessibility: WCAG AA minimum + useReducedMotion for animations
+
+      # ANTI-PATTERNS TO AVOID (AI Slop Prevention)
+      NEVER use these patterns:
+      - Purple/indigo gradients (bg-indigo-500, bg-violet-600)
+      - Gradient blob/mesh hero backgrounds
+      - Inter font without brand justification
+      - More than 4 font sizes
+      - Pill-shaped buttons (rounded-full) as default
+      - Default Tailwind color names as primary colors
 
       # OUTPUT FORMAT
 
-      For SPEC phase, generate TWO separate code blocks:
+      For SPEC phase, generate FIVE separate code blocks:
       ```
       filename: data-model.md
       ---
@@ -619,6 +1047,176 @@ agents:
       ```
       filename: api-spec.json
       [Valid OpenAPI 3.0.3 JSON - NO markdown, just raw JSON]
+      ```
+
+      ```
+      filename: design-system.md
+      ---
+      title: Design System
+      owner: architect
+      version: 1.0
+      date: {{currentDate}}
+      status: draft
+      foundation: fire-your-design-team.md
+      ---
+
+      # Design System for {{projectName}}
+
+      ## Color Palette (CRITICAL: No purple/indigo defaults!)
+      Derive colors from project brief and brand values. Use OKLCH format.
+      Follow 60/30/10 rule strictly.
+
+      ### Light Mode
+      | Role | OKLCH Value | Tailwind Var | Use Case |
+      |------|-------------|--------------|----------|
+      | Neutral (60%) | oklch(0.98 0.01 X) | --background | Backgrounds, cards |
+      | Complementary (30%) | oklch(0.20 0.02 X) | --foreground | Text, icons |
+      | Accent (10%) | oklch(0.55 0.15 X) | --primary | CTAs, highlights |
+
+      ### Dark Mode
+      [Define dark mode equivalents]
+
+      ## Typography Scale (4 Sizes Only)
+      | Level | Use Case | Tailwind Class | Size | Weight |
+      |-------|----------|----------------|------|--------|
+      | Size 1 | Page titles | text-4xl | 36-48px | font-semibold |
+      | Size 2 | Section headers | text-2xl | 24-32px | font-semibold |
+      | Size 3 | Body text | text-base | 16px | font-normal |
+      | Size 4 | Labels/captions | text-sm | 12-14px | font-normal |
+
+      ## Spacing Scale (8pt Grid)
+      | Token | Value | Tailwind | Use Case |
+      |-------|-------|----------|----------|
+      | xs | 4px | p-1, m-1, gap-1 | Tight spacing |
+      | sm | 8px | p-2, m-2, gap-2 | Default small |
+      | md | 16px | p-4, m-4, gap-4 | Default medium |
+      | lg | 24px | p-6, m-6, gap-6 | Section spacing |
+      | xl | 32px | p-8, m-8, gap-8 | Large spacing |
+      | 2xl | 48px | p-12, m-12, gap-12 | Hero/page spacing |
+
+      ## Animation Tokens (Framer Motion)
+      | Duration | Value | Use Case |
+      |----------|-------|----------|
+      | fast | 150ms | Hovers, toggles |
+      | normal | 250ms | Modals, dropdowns |
+      | slow | 400ms | Page transitions |
+
+      ### Spring Configurations
+      ```typescript
+      export const springs = {
+        snappy: { type: "spring", stiffness: 400, damping: 30 },
+        gentle: { type: "spring", stiffness: 200, damping: 20 },
+        bouncy: { type: "spring", stiffness: 300, damping: 15 },
+      };
+      ```
+
+      ## Border Radius
+      | Token | Value | Use Case |
+      |-------|-------|----------|
+      | sm | 4px | Badges, small elements |
+      | md | 8px | Buttons, inputs, cards |
+      | lg | 12px | Modals, large cards |
+
+      ## Shadow Scale
+      | Token | Value | Use Case |
+      |-------|-------|----------|
+      | sm | 0 1px 2px | Subtle elevation |
+      | md | 0 4px 6px | Cards, dropdowns |
+      | lg | 0 10px 15px | Modals, popovers |
+      ```
+
+      ```
+      filename: component-inventory.md
+      ---
+      title: Component Inventory
+      owner: architect
+      version: 1.0
+      date: {{currentDate}}
+      status: draft
+      ---
+
+      # Component Inventory for {{projectName}}
+
+      ## shadcn/ui Components Required
+      | Component | Purpose | PRD Requirement | Docs |
+      |-----------|---------|-----------------|------|
+      | Button | Primary actions | REQ-XXX-YYY | [Docs](https://ui.shadcn.com/docs/components/button) |
+      | Card | Content containers | REQ-XXX-YYY | [Docs](https://ui.shadcn.com/docs/components/card) |
+      | Dialog | Modal confirmations | REQ-XXX-YYY | [Docs](https://ui.shadcn.com/docs/components/dialog) |
+      | Input | Form inputs | REQ-XXX-YYY | [Docs](https://ui.shadcn.com/docs/components/input) |
+      | [Add all required components] |
+
+      ## Installation Commands
+      ```bash
+      pnpm dlx shadcn@latest add button card dialog input [other components]
+      pnpm add framer-motion
+      ```
+
+      ## Framer Motion Patterns Required
+      | Pattern | Components Using | Animation Spec |
+      |---------|------------------|----------------|
+      | FadeUp | Page sections, cards | opacity: 0→1, y: 20→0, spring: gentle |
+      | SlideIn | Modals, drawers | x: -100%→0, spring: snappy |
+      | Scale | Buttons, cards | scale: 1→1.02 on hover, spring: snappy |
+      | Stagger | Lists, grids | staggerChildren: 0.05 |
+
+      ## Custom Components Needed
+      | Component | Reason | Base shadcn | Framer Motion |
+      |-----------|--------|-------------|---------------|
+      | AnimatedCard | List items need stagger | Card | motion.div wrapper |
+      | PageTransition | Route changes | - | AnimatePresence |
+
+      ## Accessibility Requirements
+      - All interactive elements have aria-labels
+      - Keyboard navigation supported
+      - useReducedMotion implemented for all animations
+      - Minimum touch target: 44x44px
+      - WCAG AA contrast ratios
+      ```
+
+      ```
+      filename: user-flows.md
+      ---
+      title: User Flows
+      owner: architect
+      version: 1.0
+      date: {{currentDate}}
+      status: draft
+      ---
+
+      # User Flows for {{projectName}}
+
+      ## Flow 1: [Primary User Flow from PRD]
+      **Persona**: [From personas.md]
+      **PRD Requirements**: REQ-XXX-YYY, REQ-XXX-ZZZ
+
+      ```mermaid
+      graph TD
+          A[Start State] -->|User Action| B[Next State]
+          B -->|Action| C{Decision Point}
+          C -->|Option 1| D[State D]
+          C -->|Option 2| E[State E]
+          D -->|Complete| F[End State]
+          E -->|Complete| F
+      ```
+
+      ### Animation Notes for Flow 1
+      | Transition | Animation | Duration |
+      |------------|-----------|----------|
+      | A → B | FadeUp | normal (250ms) |
+      | B → C | SlideIn | normal (250ms) |
+      | Success | Scale + FadeUp | fast (150ms) |
+      | Error | Shake | fast (150ms) |
+
+      ## Flow 2: [Secondary User Flow]
+      [Repeat structure for each major flow from PRD]
+
+      ## Error States
+      | Error Type | UI Response | Animation |
+      |------------|-------------|-----------|
+      | Validation | Inline error message | FadeUp |
+      | Network | Toast notification | SlideIn from top |
+      | Auth | Redirect to login | FadeOut → FadeIn |
       ```
 
       For SOLUTIONING phase:
@@ -642,6 +1240,15 @@ agents:
       - [ ] api-spec.json is valid JSON (test with JSON.parse)
       - [ ] OpenAPI version is 3.0.3
       - [ ] All endpoints have error responses defined
+      - [ ] design-system.md has NO purple/indigo as primary color
+      - [ ] design-system.md uses OKLCH color format
+      - [ ] design-system.md has exactly 4 typography sizes
+      - [ ] design-system.md spacing values all divisible by 4 or 8
+      - [ ] design-system.md includes Framer Motion animation tokens
+      - [ ] component-inventory.md links to shadcn docs for each component
+      - [ ] component-inventory.md includes Framer Motion patterns
+      - [ ] user-flows.md has Mermaid diagrams for all major PRD flows
+      - [ ] user-flows.md includes animation notes per transition
 
       For SOLUTIONING phase:
       - [ ] All 10 architecture sections are present
@@ -1179,6 +1786,9 @@ validators:
       data-model.md: "has_tables"
       api-spec.json: "has_endpoints"
       tasks.md: "at_least_10_tasks"
+      design-system.md: "has_color_palette_and_typography_and_spacing_and_animations"
+      component-inventory.md: "has_component_list_with_docs_links"
+      user-flows.md: "has_mermaid_diagrams"
     implementation: "coverage_analysis"
     
   api_openapi:
@@ -1191,6 +1801,17 @@ validators:
     implementation: "database_field_check"
     field: "stack_approved"
     expected_value: true
+    
+  stack_completeness:
+    description: "Ensure stack decision includes all required layers"
+    checks:
+      has_frontend: "Frontend framework specified"
+      has_mobile_decision: "Mobile platform specified (can be 'none')"
+      has_backend: "Backend framework/language specified"
+      has_database: "Database provider specified (can be 'none')"
+      has_deployment: "Deployment platform specified"
+      has_rationale: "stack-rationale.md exists with decision matrix"
+    implementation: "stack_validator"
     
   dependencies_approved:
     description: "Check if dependencies have been approved by user"
@@ -1257,6 +1878,26 @@ validators:
       actionable_criteria: 40
     minimum_score: 70
     implementation: "quality_scoring"
+    
+  design_system_compliance:
+    description: "Ensure design follows fire-your-design-team.md principles"
+    checks:
+      typography_sizes: "Maximum 4 distinct font sizes"
+      font_weights: "Maximum 2 weights (regular, semibold)"
+      spacing_values: "All values divisible by 4 or 8"
+      color_distribution: "Follows 60/30/10 rule"
+      no_purple_primary: "Accent color is NOT purple/indigo/violet"
+      has_dark_mode: "Dark mode tokens are defined"
+      has_animation_tokens: "Framer Motion durations and springs defined"
+      reduced_motion_support: "useReducedMotion implementation noted"
+    anti_patterns:
+      - "Purple/indigo gradients as primary"
+      - "Gradient blob backgrounds"
+      - "Inter font without justification"
+      - "More than 4 font sizes"
+      - "Pill-shaped buttons as default"
+      - "Default Tailwind colors"
+    implementation: "design_validator"
 
 # Security baseline (applies to all projects)
 security_baseline:
@@ -1284,39 +1925,101 @@ security_baseline:
     - "E2E tests for critical flows"
     - "Security-focused test cases"
 # Frontend UI/UX Standards
+# Design foundation: fire-your-design-team.md
 frontend_ui_standards:
+  design_foundation: "fire-your-design-team.md"
+  
+  # Core libraries
   component_library: "shadcn/ui"
+  animation_library: "framer-motion"
   icon_library: "lucide-react"
-  styling: "Tailwind CSS"
+  styling: "Tailwind CSS v4"
+  color_format: "OKLCH"
 
   initialization_commands:
     - "pnpm dlx shadcn@latest init"
-    - description: "Initializes shadcn/ui, installs cn utility, configures Tailwind, and sets up CSS variables"
+    - "pnpm add framer-motion"
+    - description: "Initializes shadcn/ui with Tailwind v4, adds Framer Motion for animations"
 
-  default_approach: "shadcn/ui (unless project requirements specify otherwise)"
+  # Typography System (STRICT: 4 sizes, 2 weights only)
+  typography:
+    max_sizes: 4
+    allowed_weights: ["regular", "semibold"]
+    default_font: "system-ui, sans-serif"
+    scale:
+      size_1: "Large headings (text-4xl, 36-48px)"
+      size_2: "Subheadings (text-2xl, 24-32px)"
+      size_3: "Body text (text-base, 16px)"
+      size_4: "Labels/captions (text-sm, 12-14px)"
+    forbidden:
+      - "Inter font as default without brand justification"
+      - "More than 4 distinct font sizes"
+      - "Thin weights (300) for body text"
+      - "ALL CAPS buttons"
 
-  hard_rules:
-    - "Always use shadcn components over custom components (DEFAULT)"
-    - "Never create components yourself unless explicitly requested"
-    - "Always install components using the CLI: pnpm dlx shadcn@latest add <component>"
-    - "Always use standard Tailwind and shadcn color palette"
-    - "Never use inline custom colors"
-    - "Use lucide-react for all icons (DEFAULT)"
+  # Spacing System (8pt grid)
+  spacing:
+    grid_unit: 8
+    allowed_values: [4, 8, 12, 16, 24, 32, 40, 48, 64]
+    rule: "All spacing values MUST be divisible by 4 or 8"
+    tailwind_mapping:
+      xs: "p-1, m-1 (4px)"
+      sm: "p-2, m-2 (8px)"
+      md: "p-4, m-4 (16px)"
+      lg: "p-6, m-6 (24px)"
+      xl: "p-8, m-8 (32px)"
+      2xl: "p-12, m-12 (48px)"
 
-  flexibility_clause:
-    principle: "User-Driven Customization"
-    description: "If the user explicitly requests alternative UI libraries or dependencies, honor that request"
-    examples:
-      - "User requests: 'Use Material-UI instead' → Switch to Material-UI"
-      - "User requests: 'Add Framer Motion for animations' → Include Framer Motion"
-      - "User requests: 'Use Bootstrap' → Switch to Bootstrap"
-      - "User does not specify → Default to shadcn/ui"
-    guidelines:
-      - "Only deviate from shadcn/ui when user explicitly requests it in project brief or PRD"
-      - "Document all alternative dependencies in DEPENDENCIES.md with rationale"
-      - "Maintain accessibility and design consistency standards regardless of UI library choice"
-      - "Update architecture.md to reflect non-standard UI decisions"
+  # Color Distribution (60/30/10 rule)
+  color_rule:
+    neutral_percentage: 60
+    complementary_percentage: 30
+    accent_percentage: 10
+    description: "60% backgrounds/cards, 30% text/icons, 10% CTAs/highlights"
 
+  # Animation System (Framer Motion)
+  motion:
+    library: "framer-motion"
+    durations:
+      fast: "150ms"
+      normal: "250ms"
+      slow: "400ms"
+    default_easing: "spring"
+    spring_configs:
+      snappy: "stiffness: 400, damping: 30"
+      gentle: "stiffness: 200, damping: 20"
+      bouncy: "stiffness: 300, damping: 15"
+    required:
+      - "Always implement useReducedMotion check"
+      - "Exit animations must mirror enter animations"
+      - "Stagger delays: 0.03-0.08s"
+
+  # CRITICAL: Anti-Patterns to Avoid (AI Slop Prevention)
+  avoid:
+    colors:
+      - "Purple/indigo gradients (bg-indigo-500, bg-violet-600)"
+      - "Neon accents on dark backgrounds"
+      - "Blue-purple hero gradients"
+      - "Rainbow/multi-color gradients"
+      - "Default Tailwind color names as primary"
+    layouts:
+      - "Gradient blob/mesh backgrounds"
+      - "Hero + 3 cards + testimonials template"
+      - "Generic stock photo grids"
+      - "Centered everything (use alignment grid)"
+    typography:
+      - "Inter font without brand justification"
+      - "More than 4 font sizes"
+      - "Thin weights (300) for body text"
+      - "Giant hero text (80px+)"
+    components:
+      - "Pill-shaped buttons (rounded-full) as default"
+      - "Gradient buttons"
+      - "Excessive drop shadows"
+      - "Icon + text + icon buttons"
+      - "Glassmorphism without readability testing"
+
+  # Component Installation
   common_components_to_install:
     - button: "Interactive action elements"
     - card: "Content containers with header/footer"
@@ -1331,42 +2034,28 @@ frontend_ui_standards:
     - alert: "Alert messages and notifications"
     - toast: "Toast notifications"
 
-  color_system:
-    primary: "Primary action color (default: slate-900)"
-    secondary: "Secondary elements"
-    destructive: "Dangerous actions (red)"
-    muted: "Disabled or secondary text"
-    accent: "Accent highlights"
-    note: "Always use shadcn preset colors, never custom hex/rgb values inline"
-
-  typography:
-    - "Use Tailwind text utilities for all typography"
-    - "Font sizes: text-xs, text-sm, text-base, text-lg, text-xl, text-2xl, text-4xl"
-    - "Font weights: font-normal, font-medium, font-semibold, font-bold"
-    - "Always apply proper contrast ratios for accessibility (WCAG AA minimum)"
-
-  spacing_patterns:
-    - "Use Tailwind spacing scale: p-2, p-4, p-6, p-8 for padding"
-    - "Use gap-2, gap-4, gap-6, gap-8 for flex/grid gaps"
-    - "Consistent margins: mb-4, mb-6, mb-8"
-
-  responsive_design:
-    - "Mobile-first approach"
-    - "Use Tailwind breakpoints: sm, md, lg, xl, 2xl"
-    - "Example: md:grid-cols-2 lg:grid-cols-3"
-
+  # Accessibility (non-negotiable)
   accessibility:
     - "Use semantic HTML: <button>, <input>, <form>, <nav>"
     - "Include aria-labels for interactive elements"
     - "Ensure keyboard navigation works"
-    - "Test with screen readers"
+    - "Implement useReducedMotion for all animations"
+    - "WCAG AA minimum contrast ratios"
     - "Minimum touch target size: 44x44px"
 
+  # Responsive Design
+  responsive_design:
+    - "Mobile-first approach"
+    - "Use Tailwind breakpoints: sm, md, lg, xl, 2xl"
+    - "8pt grid must hold at all breakpoints"
+
+  # Dev Setup
   dev_setup:
-    step_1: "pnpm dlx shadcn@latest init"
-    step_2: "Add individual components as needed: pnpm dlx shadcn@latest add button"
-    step_3: "Import and use in components: import { Button } from '@/components/ui/button'"
-    step_4: "Follow shadcn/ui documentation at ui.shadcn.com for component patterns"
+    step_1: "pnpm dlx shadcn@latest init (select new-york style)"
+    step_2: "pnpm add framer-motion"
+    step_3: "Create lib/motion.ts with spring configs"
+    step_4: "Add components: pnpm dlx shadcn@latest add button card ..."
+    step_5: "Reference fire-your-design-team.md for design decisions"
 
 # File structure templates
 file_structure:
@@ -1382,9 +2071,14 @@ file_structure:
       - "README.md"
       - "HANDOFF.md"
     specs_folder:
+      - "stack-decision.md"
+      - "stack-rationale.md"
       - "PRD.md"
       - "data-model.md"
       - "api-spec.json"
+      - "design-system.md"
+      - "component-inventory.md"
+      - "user-flows.md"
       - "architecture.md"
       - "epics.md"
       - "tasks.md"

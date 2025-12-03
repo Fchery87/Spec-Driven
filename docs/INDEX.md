@@ -9,6 +9,7 @@ Start here for a complete introduction:
 1. **[README.md](../README.md)** - Project overview and quick start
 2. **[SETUP.md](SETUP.md)** - Environment setup and installation
 3. **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Codebase layout and architecture
+4. **[fire-your-design-team.md](../fire-your-design-team.md)** - Design system principles and anti-patterns
 
 ### Running the Application
 - **[SETUP.md](SETUP.md)** - Installation, environment variables, database setup
@@ -20,6 +21,11 @@ Start here for a complete introduction:
 - **[ORCHESTRATOR_DESIGN.md](ORCHESTRATOR_DESIGN.md)** - Complete workflow orchestration design (2200+ lines)
 - **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Code organization and module breakdown
 - **[API.md](API.md)** - Complete API endpoint reference
+
+### Design System
+- **[fire-your-design-team.md](../fire-your-design-team.md)** - Design principles, Framer Motion patterns, anti-patterns
+- Stack templates support 12+ predefined stacks or custom composition
+- Design artifacts: `design-system.md`, `component-inventory.md`, `user-flows.md`
 
 ### Building Features
 - **[AUTHENTICATION.md](AUTHENTICATION.md)** - Auth system details and implementation
@@ -334,6 +340,6 @@ Start here for a complete introduction:
 
 ---
 
-**Last Updated**: November 26, 2025
+**Last Updated**: December 2, 2025
 **Status**: Complete and Current
 **Next Review**: Q1 2026

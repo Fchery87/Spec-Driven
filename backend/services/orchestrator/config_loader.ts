@@ -106,7 +106,7 @@ export class ConfigLoader {
           owner: 'architect',
           duration_minutes: 20,
           inputs: ['project-brief.md', 'personas.md'],
-          outputs: ['plan.md', 'README.md'],
+          outputs: ['stack-decision.md', 'stack-rationale.md'],
           depends_on: ['ANALYSIS'],
           gates: ['stack_approved'],
           next_phase: 'SPEC',
@@ -118,7 +118,7 @@ export class ConfigLoader {
           owner: ['pm', 'architect'],
           duration_minutes: 45,
           inputs: ['project-brief.md', 'personas.md', 'approved_stack'],
-          outputs: ['PRD.md', 'data-model.md', 'api-spec.json'],
+          outputs: ['PRD.md', 'data-model.md', 'api-spec.json', 'design-system.md', 'component-inventory.md', 'user-flows.md'],
           depends_on: ['ANALYSIS', 'STACK_SELECTION'],
           next_phase: 'DEPENDENCIES',
           validators: ['markdown_frontmatter', 'api_openapi', 'presence', 'content_coverage']

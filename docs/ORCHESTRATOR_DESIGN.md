@@ -219,53 +219,80 @@ DONE (ZIP Ready)
 **Owner:** Architect Agent (proposal), User (approval)
 **Input:** project-brief.md, personas.md
 **Output:**
-- `plan.md` (updated with approved stack)
-- `README.md` (updated with stack summary)
-- `stack-proposal.md` (temporary, for approval flow)
+- `stack-decision.md` - Approved stack with composition details
+- `stack-rationale.md` - Decision reasoning and alternatives considered
 
 **Process:**
-1. **Proposal Generation:**
-   - System generates `specs/stack-proposal.md` showing two options:
+1. **Proposal Generation (Hybrid Mode):**
+   - Architect Agent analyzes project requirements and proposes a stack from 12+ templates:
 
-     **Option A: Next.js-Only + Expo**
-     - Composition: Next.js App Router (web+API), Expo mobile, Postgres, Prisma, tRPC, Vercel
-     - Best for: MVPs, dashboards, CRUD SaaS, low ops footprint
-     - Strengths: Single language (TypeScript), unified codebase, fast iteration, integrated API
-     - Trade-offs: Less suitable for heavy backend compute, long-running jobs
-     - Scaling: Good for <10k DAU, existing managed infra (Vercel)
+     | Template | Use Case |
+     |----------|----------|
+     | `nextjs_fullstack_expo` | Full-stack web + mobile with shared TypeScript code |
+     | `nextjs_web_only` | Web-only SaaS, dashboards, CRUD applications |
+     | `hybrid_nextjs_fastapi` | AI/ML workloads, Python backend + Next.js frontend |
+     | `vue_nuxt` | Vue ecosystem with Nuxt 3 SSR/SSG |
+     | `svelte_kit` | Lightweight, performant web applications |
+     | `astro_static` | Content-heavy sites with partial hydration |
+     | `serverless_edge` | Edge-first serverless architecture |
+     | `django_htmx` | Python backend with HTMX interactivity |
+     | `go_react` | High-performance Go API + React frontend |
+     | `flutter_firebase` | Cross-platform mobile with Firebase |
+     | `react_native_supabase` | React Native + Supabase backend |
+     | `react_express` | Traditional MERN stack pattern |
 
-     **Option B: Hybrid Next.js + FastAPI + Expo**
-     - Composition: Next.js frontend, FastAPI backend, Expo mobile, Postgres, separate infra
-     - Best for: AI/ETL/OCR, long-running jobs, heavier backend compute
-     - Strengths: Decoupled services, Python for data science/ML, flexibility, async workers
-     - Trade-offs: More operational complexity, separate deployments
-     - Scaling: Good for 10k-100k DAU, complex backend logic
+   - Architect provides reasoning based on:
+     - Project requirements from `project-brief.md`
+     - User personas from `personas.md`
+     - Technical constraints from `constitution.md`
 
-     **Option C: Custom Stack** (user-provided)
-     - User describes their preferred tech stack
-     - System respects custom choice and generates dependencies accordingly
-
-2. **User Approval:**
-   - Frontend shows stack proposal side-by-side comparison
-   - User clicks "Approve Option A", "Approve Option B", or "Custom Stack"
-   - Optionally provides reasoning/trade-offs notes
-
-3. **Stamping Decision:**
-   - Backend updates project: `stack_choice`, `stack_approved = true`
-   - Generates/updates `plan.md` with approved stack section:
-     ```markdown
-     ## Approved Tech Stack
-     **Selection:** Next.js-Only + Expo
-     **Date Approved:** 2025-11-14
-     **Reasoning:** Fast iteration, unified TypeScript codebase, suitable for MVP
-     **Dependencies:** See DEPENDENCIES.md
+2. **User Approval Options:**
+   - **Template Mode:** Select from predefined templates
+   - **Custom Mode:** Define custom stack composition:
+     ```yaml
+     frontend:
+       framework: "React"
+       meta_framework: "Next.js"
+       styling: "Tailwind CSS"
+       ui_library: "shadcn/ui"
+     mobile:
+       platform: "expo" | "flutter" | "none"
+     backend:
+       language: "TypeScript" | "Python" | "Go"
+       framework: "Express" | "FastAPI" | "Gin"
+     database:
+       type: "sql" | "nosql" | "edge"
+       provider: "Neon" | "PlanetScale" | "MongoDB"
+       orm: "Drizzle" | "Prisma"
+     deployment:
+       platform: "Vercel" | "Railway" | "Fly.io"
+       architecture: "monolith" | "microservices" | "serverless"
      ```
-   - Generates/updates `README.md` with stack summary
-   - Stores decision in `metadata.json`
+
+3. **Technical Preferences:**
+   - User can specify library preferences:
+     - State management: zustand, redux, jotai
+     - Data fetching: tanstack-query, swr
+     - Forms: react-hook-form, formik
+     - Validation: zod, yup
+     - Animation: framer-motion, react-spring
+     - Testing: vitest, jest, playwright
+
+4. **Stamping Decision:**
+   - Backend generates `stack-decision.md` with:
+     - Selected template or custom composition
+     - Technical preferences applied
+     - Rationale for selection
+   - Backend generates `stack-rationale.md` with:
+     - Decision factors
+     - Alternatives considered and why not chosen
+     - Trade-offs accepted
+   - Updates project metadata: `stack_choice`, `stack_mode`, `stack_approved = true`
 
 **Validation:**
-- `presence` - stack_proposal.md exists
+- `presence` - stack-decision.md and stack-rationale.md exist
 - `stack_approved == true` - User has explicitly approved a stack
+- `stack_completeness` - All required layers defined
 
 **Next:** → SPEC
 
@@ -280,6 +307,9 @@ DONE (ZIP Ready)
 - `PRD.md` - Product Requirements Document (detailed specs)
 - `data-model.md` - Database schema, data structures
 - `api-spec.json` - OpenAPI specification for API contracts
+- `design-system.md` - Colors, typography, spacing, motion tokens
+- `component-inventory.md` - UI components with shadcn/ui mappings
+- `user-flows.md` - Key user journey wireframes
 - Review checkpoint (user can request refinements)
 
 **Process:**
@@ -305,7 +335,33 @@ DONE (ZIP Ready)
    - Error handling
    - Authentication requirements
 
-4. **Review Checkpoint:**
+4. **Design System Generation (Architect Agent):**
+   Following principles from `fire-your-design-team.md`:
+   
+   - **design-system.md:**
+     - Color palette (project-specific, no purple defaults)
+     - Typography scale (max 4 sizes: body, label, heading, display)
+     - Spacing tokens (8pt grid: 8, 16, 24, 32, 48, 64)
+     - Motion tokens (Framer Motion: duration scale, spring configs)
+     - Accessibility requirements (WCAG compliance)
+   
+   - **component-inventory.md:**
+     - UI components mapped to shadcn/ui
+     - Custom components with props and variants
+     - Animation patterns using Framer Motion
+   
+   - **user-flows.md:**
+     - Key user journeys as wireframes
+     - Interaction states and transitions
+     - Error and empty states
+   
+   Anti-patterns enforced:
+   - No gradient blob backgrounds
+   - No default Inter font
+   - No purple as primary color (unless brand-specific)
+   - No excessive border radius (max 12px)
+
+5. **Review Checkpoint:**
    - Frontend shows "SPEC Phase Complete" with button to review artifacts
    - User can: "Proceed to Dependencies", "Ask LLM to Refine PRD", or "Edit PRD manually"
    - If user requests refinement, PRD is regenerated (versioned)
@@ -313,8 +369,9 @@ DONE (ZIP Ready)
 **Validation:**
 - `markdown_frontmatter` - PRD.md has required metadata
 - `api_openapi` - api-spec.json is valid OpenAPI 3.0
-- `presence` - All three files exist
+- `presence` - All 6 files exist (PRD, data-model, api-spec, design-system, component-inventory, user-flows)
 - `content_coverage` - PRD has at least 5 requirements, data-model has tables, api-spec has endpoints
+- `design_system_compliance` - No purple defaults, max 4 typography sizes, 8pt spacing grid
 
 **Next:** → DEPENDENCIES
 

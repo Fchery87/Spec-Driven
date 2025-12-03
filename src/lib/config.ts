@@ -36,8 +36,8 @@ export const PHASE_CONFIG = {
   // Files required for each phase
   requiredFiles: {
     ANALYSIS: ['constitution.md', 'project-brief.md', 'personas.md'],
-    STACK_SELECTION: ['stack-decision.md'],
-    SPEC: ['PRD.md', 'data-model.md', 'api-spec.json'],
+    STACK_SELECTION: ['stack-decision.md', 'stack-rationale.md'],
+    SPEC: ['PRD.md', 'data-model.md', 'api-spec.json', 'design-system.md', 'component-inventory.md', 'user-flows.md'],
     DEPENDENCIES: ['DEPENDENCIES.md', 'dependency-proposal.md', 'approval.md'],
     SOLUTIONING: ['architecture.md', 'epics.md', 'tasks.md', 'plan.md'],
     DONE: ['README.md', 'HANDOFF.md'],

@@ -585,3 +585,269 @@ export async function getDevOpsExecutor(
   const prd = artifacts['SPEC/PRD.md'] || '';
   return executeDevOpsAgent(llmClient, configLoader, prd, stackChoice || 'web_application', projectName);
 }
+
+// ============================================================================
+// DESIGN SYSTEM EXECUTOR
+// ============================================================================
+
+/**
+ * Execute Design System Agent
+ * Generates design-system.md, component-inventory.md, and user-flows.md
+ * Following fire-your-design-team.md principles
+ */
+async function executeDesignAgent(
+  llmClient: GeminiClient,
+  projectBrief: string,
+  prd: string,
+  personas: string,
+  projectName?: string
+): Promise<Record<string, string>> {
+  logger.info('[SPEC] Executing Design Agent', {
+    briefLength: projectBrief?.length || 0,
+    prdLength: prd?.length || 0,
+    personasLength: personas?.length || 0,
+    projectName
+  });
+
+  const designSystemPrompt = `You are a Senior UI/UX Designer following strict design system principles.
+
+## Project: ${projectName || 'Untitled Project'}
+
+## Context:
+${projectBrief.slice(0, 3000)}
+
+## User Personas:
+${personas.slice(0, 2000)}
+
+## Requirements (from PRD):
+${prd.slice(0, 4000)}
+
+## CRITICAL DESIGN PRINCIPLES (from fire-your-design-team.md):
+
+### Typography: ONLY 4 sizes, 2 weights
+- body: 14-16px (regular weight) - default text
+- label: 12-13px (regular weight) - small labels, captions  
+- heading: 20-24px (semibold) - section headers
+- display: 32-48px (semibold) - hero text, page titles
+- NO OTHER SIZES ALLOWED
+
+### Spacing: 8pt Grid ONLY
+- All spacing values MUST be: 8, 16, 24, 32, 48, 64, 96
+- NO values like 10, 15, 20, 25, 30
+
+### Color: 60/30/10 Rule
+- 60% neutral (background)
+- 30% secondary (text, borders)
+- 10% accent (brand color, CTAs)
+- NEVER use purple as default primary (common AI slop)
+- Choose brand colors based on project context
+
+### Animation: Framer Motion
+- Duration scale: 150ms (fast), 200ms (normal), 300ms (slow), 500ms (emphasis)
+- Spring config: { stiffness: 400, damping: 30 } for snappy interactions
+- Always include reduced motion alternatives
+
+### ANTI-PATTERNS TO AVOID (AI Slop):
+- NO purple/violet as primary color unless brand-specific
+- NO gradient blob backgrounds
+- NO Inter font as default (choose project-appropriate font)
+- NO excessive border radius (max 12px for containers)
+- NO generic "modern" purple gradient buttons
+
+Generate a design-system.md file with:
+1. Color palette (with semantic names and HSL values)
+2. Typography scale (exactly 4 sizes)
+3. Spacing tokens (8pt grid values only)
+4. Border radius tokens (max 12px)
+5. Shadow tokens
+6. Motion tokens (Framer Motion durations and springs)
+7. Breakpoints
+
+Output format:
+\`\`\`markdown
+filename: design-system.md
+---
+title: "Design System"
+owner: "architect"
+version: "1"
+date: "${new Date().toISOString().split('T')[0]}"
+status: "draft"
+---
+
+# Design System for ${projectName || 'Project'}
+
+## Color Palette
+... (include semantic colors with HSL values)
+
+## Typography
+... (exactly 4 sizes, 2 weights)
+
+## Spacing
+... (8pt grid: 8, 16, 24, 32, 48, 64)
+
+## Motion
+... (Framer Motion duration scale and spring configs)
+
+## Components
+... (shadcn/ui component customizations)
+\`\`\``;
+
+  const componentInventoryPrompt = `You are a Senior UI/UX Designer creating a component inventory.
+
+## Project: ${projectName || 'Untitled Project'}
+
+## PRD Features:
+${prd.slice(0, 5000)}
+
+Generate component-inventory.md listing ALL UI components needed for this project.
+
+For each component, specify:
+1. Component name
+2. shadcn/ui base component (if applicable)
+3. Props/variants needed
+4. Animation requirements (Framer Motion)
+
+Output format:
+\`\`\`markdown
+filename: component-inventory.md
+---
+title: "Component Inventory"
+owner: "architect"
+version: "1"
+date: "${new Date().toISOString().split('T')[0]}"
+status: "draft"
+---
+
+# Component Inventory
+
+## Layout Components
+| Component | Base | Variants | Animation |
+|-----------|------|----------|-----------|
+| ... | ... | ... | ... |
+
+## Form Components
+| Component | Base | Variants | Animation |
+|-----------|------|----------|-----------|
+| ... | ... | ... | ... |
+
+## Data Display
+| Component | Base | Variants | Animation |
+|-----------|------|----------|-----------|
+| ... | ... | ... | ... |
+
+## Feedback Components
+| Component | Base | Variants | Animation |
+|-----------|------|----------|-----------|
+| ... | ... | ... | ... |
+
+## Custom Components (not in shadcn/ui)
+| Component | Purpose | Props |
+|-----------|---------|-------|
+| ... | ... | ... |
+\`\`\``;
+
+  const userFlowsPrompt = `You are a Senior UI/UX Designer creating user flow documentation.
+
+## Project: ${projectName || 'Untitled Project'}
+
+## User Personas:
+${personas.slice(0, 2000)}
+
+## PRD Features:
+${prd.slice(0, 4000)}
+
+Generate user-flows.md documenting the key user journeys.
+
+For each flow:
+1. Flow name and description
+2. User persona
+3. Steps (numbered)
+4. Key screens/states
+5. Success criteria
+6. Error states
+
+Output format:
+\`\`\`markdown
+filename: user-flows.md
+---
+title: "User Flows"
+owner: "architect"
+version: "1"
+date: "${new Date().toISOString().split('T')[0]}"
+status: "draft"
+---
+
+# User Flows
+
+## Flow 1: [Primary User Journey]
+**Persona**: [Target persona]
+**Goal**: [What the user wants to accomplish]
+
+### Steps
+1. [Step 1]
+2. [Step 2]
+...
+
+### Screens
+- Screen A: [Description]
+- Screen B: [Description]
+
+### Success State
+[What success looks like]
+
+### Error States
+- Error 1: [Description and recovery]
+- Error 2: [Description and recovery]
+
+## Flow 2: [Secondary Journey]
+...
+\`\`\``;
+
+  // Generate all three design artifacts
+  const [designSystemResponse, componentResponse, userFlowsResponse] = await Promise.all([
+    llmClient.generateCompletion(designSystemPrompt, undefined, 2, 'SPEC'),
+    llmClient.generateCompletion(componentInventoryPrompt, undefined, 2, 'SPEC'),
+    llmClient.generateCompletion(userFlowsPrompt, undefined, 2, 'SPEC')
+  ]);
+
+  const artifacts: Record<string, string> = {};
+
+  // Parse design-system.md
+  const designSystemArtifacts = parseArtifacts(designSystemResponse.content, ['design-system.md']);
+  if (designSystemArtifacts['design-system.md']) {
+    artifacts['design-system.md'] = designSystemArtifacts['design-system.md'];
+  }
+
+  // Parse component-inventory.md
+  const componentArtifacts = parseArtifacts(componentResponse.content, ['component-inventory.md']);
+  if (componentArtifacts['component-inventory.md']) {
+    artifacts['component-inventory.md'] = componentArtifacts['component-inventory.md'];
+  }
+
+  // Parse user-flows.md
+  const userFlowsArtifacts = parseArtifacts(userFlowsResponse.content, ['user-flows.md']);
+  if (userFlowsArtifacts['user-flows.md']) {
+    artifacts['user-flows.md'] = userFlowsArtifacts['user-flows.md'];
+  }
+
+  logger.info('[SPEC] Design Agent completed', {
+    artifacts: Object.keys(artifacts),
+    designSystemLength: artifacts['design-system.md']?.length || 0,
+    componentInventoryLength: artifacts['component-inventory.md']?.length || 0,
+    userFlowsLength: artifacts['user-flows.md']?.length || 0
+  });
+
+  return artifacts;
+}
+
+export async function getDesignExecutor(
+  llmClient: GeminiClient,
+  projectId: string,
+  artifacts: Record<string, string>,
+  projectName?: string
+): Promise<Record<string, string>> {
+  const brief = artifacts['ANALYSIS/project-brief.md'] || '';
+  const prd = artifacts['SPEC/PRD.md'] || '';
+  const personas = artifacts['ANALYSIS/personas.md'] || '';
+  return executeDesignAgent(llmClient, brief, prd, personas, projectName);
+}
